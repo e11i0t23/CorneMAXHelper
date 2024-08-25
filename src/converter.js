@@ -520,12 +520,10 @@ async function convertImageBlob(img, options) {
     }
 
 
-    if (outputFormat == OutputMode.BIN) {
-        console.log(bin_res_blob)
+    if (outputFormat == OutputMode.BIN) 
         return bin_res_blob;
-    } else
-        console.log(c_res_array)
-    return c_res_array;
+    else
+        return c_res_array;
 }
 
 module.exports = { convertImageBlob, Converter };
