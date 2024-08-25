@@ -1,3 +1,4 @@
+require("dotenv").config
 const { app, Tray, Menu, nativeImage, BrowserWindow, shell, protocol, session, dialog } = require('electron')
 const HID = require('node-hid')
 const {usb, WebUSB} = require('usb')
@@ -9,16 +10,15 @@ const { ImageMode, OutputMode, CODES, HALF } = require('./enums');
 const { loadImage } = require('@napi-rs/canvas');
 const path = require("path")
 const {readFileSync} = require("fs")
+const {loadConfigFile, saveNewConfig} = require("./helpers")
 
-const configPath = app.getPath("userData")
 
-const clientId = ""
+const userPath = app.getPath("userData")
+
+const clientId = process.env.CLIENT_ID
 const redirectUri = 'http://localhost.com:3961/spotify-callback';
 
-
-let accessToken
-let refreshToken 
-
+let config
 let tray
 let intervalIDDev
 let intervalIDSync
@@ -26,8 +26,6 @@ let intervalIDSpotify
 let hiddev
 let codeVerifier
 let nowPlaying
-// let accessToken
-// let refreshToken
 let connected = false
 
 const webusb = new WebUSB({
@@ -62,17 +60,13 @@ const contextMenu = () => Menu.buildFromTemplate(connected ? [
     { label: 'Quit', click: app.quit }
 ])
 
-app.on("ready", () => {
+app.on("ready", async () => {
+    config = await loadConfigFile(userPath)
     // const partition = 'persist:electron'
     // const ses = session.fromPartition(partition)
     // console.log(path.join(path.dirname(), "logo.png"))
     const icon = nativeImage.createFromPath( path.join(__dirname, "../logoTemplate.png"))
     tray = new Tray(icon)
-
-
-
-
-
     tray.setToolTip('Mechboards Max Helper')
     tray.setContextMenu(contextMenu())
     console.log('Tray created')
@@ -90,13 +84,13 @@ const connectToDevice = async () => {
 
     // See if the keyboard is already connected to the PC, if it is connect to the HID device otherwise watch for its connection
     var devices = await HID.devicesAsync();
-    console.log(devices.filter(device => device.vendorId == 18003))
+    // console.log(devices.filter(device => device.vendorId == 18003))
     device = devices.find(device => device.vendorId == 0x4653 && device.productId == 0x0001 && device.usagePage == 0xFF60 && device.usage == 0x61);
     // device = devices.find(device => device.vendorId == 18003 && device.productId == 1 && device.usagePage == 65376 && device.usage == 116);
     if (!device) return false
     try {
         hiddev = await HID.HIDAsync.open(device.path);
-        console.log(hiddev.getDeviceInfo())
+        // console.log(hiddev.getDeviceInfo())
         if (!hiddev) return false
         connected = true;
         console.log('Connected to device')
@@ -212,10 +206,10 @@ const spotifyAuth = async () => {
     win.loadURL(authUrl.toString())
     // win.webContents.openDevTools()
     win.webContents.on('will-navigate', (event, url) => {
-        console.log("will-navigate", url)
+        // console.log("will-navigate", url)
         if (!url.startsWith(redirectUri)) return
         const urlParams = new URLSearchParams(url.replace(redirectUri + '?', ''));
-        console.log(urlParams)
+        // console.log(urlParams)
         let code = urlParams.get('code');
         handleSpotifyCallback(code)
         event.preventDefault()
@@ -263,11 +257,12 @@ const handleSpotifyCallback = async (code) => {
 
     const body = await fetch("https://accounts.spotify.com/api/token", payload);
     const response = await body.json();
-    console.log(response)
-    accessToken = response.access_token;
-    refreshToken = response.refresh_token;
-    console.log("access " + accessToken)
-    console.log("refresh " + refreshToken)
+    // console.log(response)
+    config.accessToken = response.access_token;
+    config.refreshToken = response.refresh_token;
+    console.log("access " + config.accessToken)
+    console.log("refresh " + config.refreshToken)
+    saveNewConfig(userPath, config)
 }
 
 const getUserPlayback = async () => {
@@ -275,7 +270,7 @@ const getUserPlayback = async () => {
     const payload = {
         method: 'GET',
         headers: {
-            'Authorization': `Bearer ${accessToken}`,
+            'Authorization': `Bearer ${config.accessToken}`,
         },
     }
 
@@ -293,7 +288,7 @@ const getUserPlayback = async () => {
     // console.log(response.item.album.images)
     if (response.item.id != nowPlaying) {
         nowPlaying = response.item.id
-        const image = await loadImage(response.item.album.images[2].url)
+                const image = await loadImage(response.item.album.images[2].url)
         const convertedImage = await convertImageBlob(image, {
             dith: false,
             cf: ImageMode.ICF_TRUE_COLOR_ARGB8565_RBSWAP,
@@ -319,7 +314,7 @@ const getUserPlayback = async () => {
         }
         // data = [0xFF, CODES.NOW_PLAYING, ...string2bytes(response.item.name)]
         // console.log(data.length)
-        console.log(response.item.name)
+        // console.log(response.item.name)
         hiddev.write([0xFF, 0x07, 0x00, CODES.NOW_PLAYING, 0x01, ...string2bytes(response.item.name)])
         // hiddev.write([0xFF, CODES.NOW_PLAYING, ...string2bytes(response.item.name)])
         // hiddev.write([0xFF, CODES.IMAGE, ...imageBytesArray])
@@ -348,7 +343,7 @@ const refreshSpotifyToken = async (func) => {
         },
         body: new URLSearchParams({
             grant_type: 'refresh_token',
-            refresh_token: refreshToken,
+            refresh_token: config.refreshToken,
             client_id: clientId
         }),
     }
@@ -359,8 +354,9 @@ const refreshSpotifyToken = async (func) => {
 
         console.log('access_token', response.accessToken);
         console.log('refresh_token', response.refreshToken)
-        accessToken = response.accessToken;
-        refreshToken = response.refreshToken;
+        config.accessToken = response.accessToken;
+        config.refreshToken = response.refreshToken;
+        saveNewConfig(userPath, config)
         return func()
     } else {
         console.log(response)
@@ -391,7 +387,7 @@ const uploadImage = async (half) => {
     // remove first 4 bytes that are nonsense
     const convertImageFix = convertedImage.slice(4)
     const imageBytesArray = new Uint8Array(convertImageFix)
-    console.log(imageBytesArray)
+    // console.log(imageBytesArray)
     for (let i = 0; i < imageBytesArray.length; i += 26) {
         x = i / 26
         buffer[x] = new Uint8Array([0xFF, 0x07, 0x00, CODES.IMG_FULLSIZE, half, ...splitUint16(x), ...imageBytesArray.slice(i, i + 26)])

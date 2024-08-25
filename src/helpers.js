@@ -1,3 +1,7 @@
+const {readFileSync, writeFileSync} = require("fs")
+const path = require("path")
+const {safeStorage} = require("electron")
+
 // Converter Helpers
 /**
  * Rounds equivalently to PHP_ROUND_HALF_UP in PHP.
@@ -26,8 +30,18 @@ function dechex(n) {
 
 // Tray Helpers
 
-const loadConfigFile = (configPath) => {
-
+const loadConfigFile = async (userData) => {
+    const filestring = await readFileSync(path.join(userData, "config.json"))
+    if (!filestring) return {accessToken: null, refreshToken:null}
+    if (!safeStorage.isEncryptionAvailable()) return JSON.parse(filestring)
+    const unencrypted = safeStorage.decryptString(filestring)
+    return JSON.parse(unencrypted)
 }
 
-module.exports = { round_half_up, str_pad, dechex };
+const saveNewConfig = async (userData, config) => {
+    var configString = JSON.stringify(config)
+    if (safeStorage.isEncryptionAvailable()) configString = safeStorage.encryptString(configString)
+    writeFileSync(path.join(userData, "config.json"), configString)
+}
+
+module.exports = { round_half_up, str_pad, dechex, loadConfigFile, saveNewConfig };
