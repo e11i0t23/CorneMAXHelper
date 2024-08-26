@@ -1,31 +1,29 @@
-require("dotenv").config
-const { app, Tray, Menu, nativeImage, BrowserWindow, shell, protocol, session, dialog } = require('electron')
-const HID = require('node-hid')
-const {usb, WebUSB} = require('usb')
-const si = require('systeminformation');
-const dayjs = require('dayjs')
+import { app, Tray, Menu, nativeImage, BrowserWindow, shell, protocol, session, dialog } from 'electron'
+import HID, { HIDAsync } from 'node-hid'
+import {usb, WebUSB} from 'usb'
+import si from 'systeminformation';
+import dayjs from 'dayjs'
 // const { SpotifyApi } = require('@spotify/web-api-ts-sdk');
-const { convertImageBlob } = require("./converter");
-const { ImageMode, OutputMode, CODES, HALF } = require('./enums');
-const { loadImage } = require('@napi-rs/canvas');
-const path = require("path")
-const {readFileSync} = require("fs")
-const {loadConfigFile, saveNewConfig} = require("./helpers")
+import { convertImageBlob } from "./converter";
+import { ImageMode, OutputMode, CODES, HALF, Config } from './types';
+import { loadImage } from '@napi-rs/canvas';
+import path from "path"
+import {readFileSync} from "fs"
+import {loadConfigFile, saveNewConfig} from "./helpers"
 
 
 const userPath = app.getPath("userData")
 
-const clientId = process.env.CLIENT_ID
+const clientId = process.env.CLIENT_ID || ""
 const redirectUri = 'http://localhost.com:3961/spotify-callback';
 
-let config
-let tray
-let intervalIDDev
-let intervalIDSync
-let intervalIDSpotify
-let hiddev
-let codeVerifier
-let nowPlaying
+let config: Config
+let tray: Tray
+let intervalIDSync: any
+let intervalIDSpotify: any
+let hiddev: HIDAsync
+let codeVerifier: string
+let nowPlaying: number | undefined
 let connected = false
 
 const webusb = new WebUSB({
@@ -65,7 +63,7 @@ app.on("ready", async () => {
     // const partition = 'persist:electron'
     // const ses = session.fromPartition(partition)
     // console.log(path.join(path.dirname(), "logo.png"))
-    const icon = nativeImage.createFromPath( path.join(__dirname, "../logoTemplate.png"))
+    const icon = nativeImage.createFromPath( path.join(__dirname, "./images/logoTemplate.png"))
     tray = new Tray(icon)
     tray.setToolTip('Mechboards Max Helper')
     tray.setContextMenu(contextMenu())
@@ -85,10 +83,11 @@ const connectToDevice = async () => {
     // See if the keyboard is already connected to the PC, if it is connect to the HID device otherwise watch for its connection
     var devices = await HID.devicesAsync();
     // console.log(devices.filter(device => device.vendorId == 18003))
-    device = devices.find(device => device.vendorId == 0x4653 && device.productId == 0x0001 && device.usagePage == 0xFF60 && device.usage == 0x61);
+    var device = devices.find(device => device.vendorId == 0x4653 && device.productId == 0x0001 && device.usagePage == 0xFF60 && device.usage == 0x61);
     // device = devices.find(device => device.vendorId == 18003 && device.productId == 1 && device.usagePage == 65376 && device.usage == 116);
     if (!device) return false
     try {
+        if (!device.path) throw("not string")
         hiddev = await HID.HIDAsync.open(device.path);
         // console.log(hiddev.getDeviceInfo())
         if (!hiddev) return false
@@ -129,7 +128,7 @@ usb.on('detach', (device) => {
     if (device.deviceDescriptor.idVendor == Number(0x4653) && device.deviceDescriptor.idProduct == Number(0x0001)) {
         connected = false;
         hiddev.close()
-        hiddev = null;
+        hiddev;
         tray.setContextMenu(contextMenu())
         console.log("Discconected device")
         try {
@@ -156,25 +155,25 @@ usb.on('detach', (device) => {
 //     }
 // });
 
-function string2bytes(str) {
+function string2bytes(str:string) {
     let utf8Encode = new TextEncoder();
     return utf8Encode.encode(str);
 }
 
 const sync = async () => {
-    half = HALF.MASTER
+    var half = HALF.MASTER
     // mem
-    mem = await si.mem()
-    hiddev.write(new Uint8Array([0xFF, 0x07, 0x00, CODES.RAM, half, Math.round(mem.active / (mem.used + mem.free) * 100)]))
+    let mem = await si.mem()
+    hiddev.write(new Uint8Array([0xFF, 0x07, 0x00, CODES.RAM, half, Math.round(mem.active / (mem.used + mem.free) * 100)]) as Buffer)
     // cpu
-    cpu = await si.currentLoad()
-    hiddev.write(new Uint8Array([0xFF, 0x07, 0x00, CODES.CPU, half, (Math.round(cpu.currentLoad) )]))
+    let cpu = await si.currentLoad()
+    hiddev.write(new Uint8Array([0xFF, 0x07, 0x00, CODES.CPU, half, (Math.round(cpu.currentLoad) )])as Buffer)
     // // gpu
-    gpu = await si.graphics()
-    hiddev.write(new Uint8Array([0xFF, 0x07, 0x00, CODES.GPU, half, (Math.round(gpu.controllers[0].utilizationGpu) )]))
+    let gpu = await si.graphics()
+    hiddev.write(new Uint8Array([0xFF, 0x07, 0x00, CODES.GPU, half, (Math.round(gpu.controllers[0].utilizationGpu || 0) )])as Buffer)
     // time
-    var d = new Date(); // for now
-    hiddev.write(new Uint8Array([0xFF, 0x07, 0x00, CODES.TIME, half, ...string2bytes(`${dayjs(d).format("hh:mm")}`)]))
+    let d = new Date(); // for now
+    hiddev.write(new Uint8Array([0xFF, 0x07, 0x00, CODES.TIME, half, ...string2bytes(`${dayjs(d).format("hh:mm")}`)])as Buffer)
     // hiddev.write([0xFF, CODES.TIME, ...string2bytes(`${dayjs(d).format("hh:mm")}`)])
 }
 
@@ -201,7 +200,7 @@ const spotifyAuth = async () => {
 
     authUrl.search = new URLSearchParams(params).toString();
 
-    const win = new BrowserWindow({ width: 800, height: 600 })
+    const win = new BrowserWindow({ width: 800, height: 600, icon:path.join(__dirname, "./images/icon.png")})
 
     win.loadURL(authUrl.toString())
     // win.webContents.openDevTools()
@@ -211,7 +210,7 @@ const spotifyAuth = async () => {
         const urlParams = new URLSearchParams(url.replace(redirectUri + '?', ''));
         // console.log(urlParams)
         let code = urlParams.get('code');
-        handleSpotifyCallback(code)
+        handleSpotifyCallback(code!)
         event.preventDefault()
         win.hide()
     })
@@ -219,27 +218,27 @@ const spotifyAuth = async () => {
     // shell.openExternal(authUrl.toString())
 }
 
-const generateRandomString = (length) => {
+const generateRandomString = (length:number) => {
     const possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
     const values = crypto.getRandomValues(new Uint8Array(length));
     return values.reduce((acc, x) => acc + possible[x % possible.length], "");
 }
 
 
-const sha256 = async (plain) => {
+const sha256 = async (plain:string) => {
     const encoder = new TextEncoder()
     const data = encoder.encode(plain)
     return crypto.subtle.digest('SHA-256', data)
 }
 
-const base64encode = (input) => {
+const base64encode = (input: ArrayBuffer) => {
     return btoa(String.fromCharCode(...new Uint8Array(input)))
         .replace(/=/g, '')
         .replace(/\+/g, '-')
         .replace(/\//g, '_');
 }
 
-const handleSpotifyCallback = async (code) => {
+const handleSpotifyCallback = async (code:string) => {
     console.log(code)
     const payload = {
         method: 'POST',
@@ -266,7 +265,7 @@ const handleSpotifyCallback = async (code) => {
 }
 
 const getUserPlayback = async () => {
-    let buffer = []
+    let buffer: Uint8Array[] = []
     const payload = {
         method: 'GET',
         headers: {
@@ -301,10 +300,11 @@ const getUserPlayback = async () => {
             overrideWidth: 64,
             overrideHeight: 64,
         })
-        const imageBytesArray = new Uint8Array(convertedImage)
-        // console.log(imageBytesArray)
+        if (typeof convertedImage == "string" || !convertedImage ) return
+        const convertImageFix = convertedImage.slice(4)
+        const imageBytesArray = new Uint8Array(convertImageFix)
         for (let i = 0; i < imageBytesArray.length; i += 26) {
-            x = i / 26
+            var x = i / 26
             // console.log("test")
             buffer[x] = new Uint8Array([0xFF, 0x07, 0x00, CODES.IMAGE, 0x01, ...splitUint16(x), ...imageBytesArray.slice(i, i + 26)])
             // buffer[x] = new Uint8Array([0xFF, CODES.IMAGE, ...splitUint16(x), ...imageBytesArray.slice(i, i + 28)])
@@ -321,7 +321,7 @@ const getUserPlayback = async () => {
     }
 }
 
-function splitUint16(value) {
+function splitUint16(value: number) {
     // Ensure the value is within the range of uint16
     const uint16Value = value & 0xFFFF;
 
@@ -333,17 +333,17 @@ function splitUint16(value) {
 }
 
 
-const refreshSpotifyToken = async (func) => {
+const refreshSpotifyToken = async (func: any) => {
     const url = "https://accounts.spotify.com/api/token";
 
-    const payload = {
+    const payload: RequestInit = {
         method: 'POST',
         headers: {
             'Content-Type': 'application/x-www-form-urlencoded'
         },
         body: new URLSearchParams({
             grant_type: 'refresh_token',
-            refresh_token: config.refreshToken,
+            refresh_token: config.refreshToken as string,
             client_id: clientId
         }),
     }
@@ -366,8 +366,8 @@ const refreshSpotifyToken = async (func) => {
 }
 
 
-const uploadImage = async (half) => {
-    let buffer = []
+const uploadImage = async (half: number) => {
+    let buffer: Uint8Array[] = []
     const OF = await dialog.showOpenDialog({ properties: ['openFile'], filters: [{ name: 'Images', extensions: ['png', 'jpg', 'jpeg'] }] })
     if (OF.canceled) return
     if (OF.filePaths.length == 0) return
@@ -385,11 +385,12 @@ const uploadImage = async (half) => {
         overrideHeight: 160,
     })
     // remove first 4 bytes that are nonsense
+    if (typeof convertedImage == "string" || !convertedImage ) return
     const convertImageFix = convertedImage.slice(4)
     const imageBytesArray = new Uint8Array(convertImageFix)
     // console.log(imageBytesArray)
     for (let i = 0; i < imageBytesArray.length; i += 26) {
-        x = i / 26
+        var x = i / 26
         buffer[x] = new Uint8Array([0xFF, 0x07, 0x00, CODES.IMG_FULLSIZE, half, ...splitUint16(x), ...imageBytesArray.slice(i, i + 26)])
         // buffer[x] = new Uint8Array([0xFF, 0xFF, code, ...splitUint16(x), ...imageBytesArray.slice(i, i + 28)])
         setTimeout(hiddev.write, x, buffer[x])

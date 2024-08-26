@@ -1,0 +1,19 @@
+{
+    "compilerOptions": {
+      "target": "ES6",
+      "module": "commonjs",
+      "strict": true,
+      "outDir": "./dist",
+      "rootDir": "./src",
+      "esModuleInterop": true,
+      "moduleResolution": "node",
+      "skipLibCheck": true,
+      "baseUrl": "./",
+      "paths": {
+        "*": ["node_modules/*"]
+      },
+      "strictPropertyInitialization": false
+    },
+    "include": ["src/**/*.ts"]
+  }
+  

@@ -1,7 +1,7 @@
-const { createCanvas, Image } = require('@napi-rs/canvas');
-const { ImageMode, ImageModeUtil, OutputMode } = require('./enums');
-const { buildPalette, utils, applyPalette, distance, image } = require('image-q');
-const { round_half_up, str_pad, dechex } = require('./helpers');
+import { createCanvas, Image } from '@napi-rs/canvas';
+import { buildPalette, utils, applyPalette, distance, image } from 'image-q';
+import { round_half_up, str_pad, dechex, ImageModeUtil } from './helpers';
+import { ImageMode, OutputMode, ConverterOptions } from './types';
 
 // export interface ConverterOptions {
 //     dith?: boolean;
@@ -15,7 +15,7 @@ const { round_half_up, str_pad, dechex } = require('./helpers');
 //     overrideWidth?: number;
 //     overrideHeight?: number;
 // }
-class Converter {
+export class Converter {
     w = 0;         /*Image width*/
     h = 0;         /*Image height*/
     raw_len = 0; /* RAW image data size */
@@ -23,24 +23,28 @@ class Converter {
     outputFormat
     alpha = false;     /*Add alpha byte or not*/
     chroma = false;    /*Chroma keyed?*/
-    d_out;     /*Output data (result)*/
+    d_out: any;     /*Output data (result)*/
     imageData; /* Input image data */
     options;
 
     /*Helper variables*/
-    r_act;
-    b_act;
-    g_act;
+    r_act: number;
+    b_act: number;
+    g_act: number;
 
     r_nerr;  /*Classification error for next pixel*/
     g_nerr;
     b_nerr;
 
+    r_earr;
+    g_earr;
+    b_earr;
+
     /* Current pass being made */
     pass;
 
 
-    constructor(w, h, imageData, alpha, options) {
+    constructor(w:number, h:number, imageData:any, alpha:boolean, options: ConverterOptions) {
         this.w = w;
         this.h = h;
         this.imageData = imageData;
@@ -82,7 +86,7 @@ class Converter {
             this.raw_len = d_array.length;
             const indent = this.options.useLegacyFooterOrder ? "  " : "    ";
             const numValuesPerRow = this.options.useLegacyFooterOrder ? 15 : 12;
-            let str = "\n" + indent + d_array.map((val, i) => "0x" + str_pad(dechex(val), 2, '0', true) + ((i % (numValuesPerRow + 1)) == numValuesPerRow ? (", \n" + indent) : ", ")).join("");
+            let str = "\n" + indent + d_array.map((val, i) => "0x" + str_pad(dechex(val as number), 2, '0', true) + ((i % (numValuesPerRow + 1)) == numValuesPerRow ? (", \n" + indent) : ", ")).join("");
             str = str.substr(0, str.length - 2);
             return str;
         }
@@ -108,7 +112,7 @@ class Converter {
             }
         }
 
-        if (needsFormatSwap) {
+        if (needsFormatSwap && oldColorFormat) {
             this.cf = oldColorFormat;
         }
 
@@ -161,7 +165,7 @@ class Converter {
 
 
 
-    static imagemode_to_enum_name($cf) {
+    static imagemode_to_enum_name($cf:number) {
         switch ($cf) {
             case ImageMode.CF_TRUE_COLOR:
             case ImageMode.CF_TRUE_COLOR_ALPHA:
@@ -186,11 +190,11 @@ class Converter {
         }
     }
 
-    conv_px(x, y) {
-        function array_push(arr, v) {
+    conv_px(x: number, y: number) {
+        function array_push(arr: number[], v: number) {
             arr.push(v);
         }
-        function isset(val) {
+        function isset(val: number) {
             return typeof val != 'undefined' && val != undefined;
         }
         const startIndex = ((y * this.w) + x) * 4;
@@ -231,7 +235,7 @@ class Converter {
         }
     }
 
-    dith_next(r, g, b, x) {
+    dith_next(r:number, g:number, b:number, x:number) {
 
         if (this.options.dith) {
             this.r_act = r + this.r_nerr + this.r_earr[x + 1];
@@ -288,7 +292,7 @@ class Converter {
         }
     }
 
-    classify_pixel(value, bits) {
+    classify_pixel(value:number, bits:number) {
         const tmp = 1 << (8 - bits);
         let val = Math.round(value / tmp) * tmp;
         if (val < 0) val = 0;
@@ -469,12 +473,12 @@ class Converter {
 }
 
 
-function isNotRaw(options) {
+function isNotRaw(options: ConverterOptions) {
     return options.cf != ImageMode.CF_RAW && options.cf != ImageMode.CF_RAW_ALPHA; /* && options.cf != ImageMode.CF_RAW_CHROMA; */
 }
 
-async function convertImageBlob(img, options) {
-    function isImage(img, options) {
+export async function convertImageBlob(img: Image, options: ConverterOptions) {
+    function isImage(img:Image, options:ConverterOptions) {
         return isNotRaw(options);
     }
     let c_res_array;
@@ -525,5 +529,3 @@ async function convertImageBlob(img, options) {
     else
         return c_res_array;
 }
-
-module.exports = { convertImageBlob, Converter };
