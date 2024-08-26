@@ -58,7 +58,7 @@ export enum ImageMode {
     CF_RGB565A8,
 }
 
-export interface Config {
+export interface ConfigStore {
     accessToken: string | null, 
     refreshToken: string | null
 }

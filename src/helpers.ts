@@ -1,7 +1,7 @@
 import {readFileSync, writeFileSync} from "fs"
 import path from "path"
 import {safeStorage} from "electron"
-import type { ImageMode, Config } from "./types";
+import type { ImageMode, ConfigStore } from "./types";
 
 // Converter Helpers
 /**
@@ -31,7 +31,6 @@ export function dechex(n:number) {
 
 export class ImageModeUtil {
     static isTrueColor(mode: ImageMode) {
-        console.log(mode)
         // if (typeof mode != 'string')
         //     mode = ImageMode[mode];
         // return mode.startsWith("CF_TRUE_COLOR");
@@ -40,18 +39,46 @@ export class ImageModeUtil {
 }
 const BINARY_FORMAT_PREFIX = "ICF_TRUE_COLOR_";
 
-// Tray Helpers
+export function splitUint16(value: number) {
+    // Ensure the value is within the range of uint16
+    const uint16Value = value & 0xFFFF;
 
-export const loadConfigFile = async (userData: string) => {
-    const filestring = await readFileSync(path.join(userData, "config.json"))
-    if (!filestring) return {accessToken: null, refreshToken:null} as Config
-    if (!safeStorage.isEncryptionAvailable()) return JSON.parse(filestring.toString()) as Config
-    const unencrypted = safeStorage.decryptString(filestring)
-    return JSON.parse(unencrypted) as Config
+    // Split the uint16 value into two uint8 values
+    const highByte = (uint16Value >> 8) & 0xFF; // High byte (most significant 8 bits)
+    const lowByte = uint16Value & 0xFF;         // Low byte (least significant 8 bits)
+    // console.log(value, uint16Value, highByte, lowByte)
+    return [highByte, lowByte];
 }
 
-export const saveNewConfig = async (userData: string, config: Config) => {
-    var configString: string | Buffer  = JSON.stringify(config)
-    if (safeStorage.isEncryptionAvailable()) configString = safeStorage.encryptString(configString)
-    writeFileSync(path.join(userData, "config.json"), configString)
+export function string2bytes(str:string) {
+    let utf8Encode = new TextEncoder();
+    return utf8Encode.encode(str);
+}
+
+// Tray Helpers
+
+export class Config {
+    config: ConfigStore;
+    userData: string;
+    constructor(userData:string) {
+        this.userData = userData
+        this.loadConfigFile()
+    }
+
+    loadConfigFile = async () => {
+        const filestring = await readFileSync(path.join(this.userData, "config.json"))
+        if (!filestring) this.config = {accessToken: null, refreshToken:null}
+        if (!safeStorage.isEncryptionAvailable()) this.config = JSON.parse(filestring.toString())
+        const unencrypted = safeStorage.decryptString(filestring)
+        this.config = JSON.parse(unencrypted) 
+    }
+    
+    updateConfig = async (config: ConfigStore) => {
+        this.config = config
+        var configString: string | Buffer  = JSON.stringify(config)
+        if (safeStorage.isEncryptionAvailable()) configString = safeStorage.encryptString(configString)
+        writeFileSync(path.join(this.userData, "config.json"), configString)
+    }
+
+    
 }
