@@ -25,7 +25,7 @@ export const uploadImage = async (dev: Device, code: CODES, half: HALF, image: I
     // console.log(imageBytesArray)
     for (let i = 0; i < imageBytesArray.length; i += 26) {
         var x = i / 26
-        buffer[x] = new Uint8Array([0xFF, 0x07, 0x00, code, half, ...splitUint16(x), ...imageBytesArray.slice(i, i + 26)])
-        setTimeout(dev.write, x, buffer[x])
+        buffer[x] = new Uint8Array([...splitUint16(x), ...imageBytesArray.slice(i, i + 26)])
+        setTimeout(dev.write, x, code, half, buffer[x])
     }
 }

@@ -1,6 +1,6 @@
 import HID, { HIDAsync } from 'node-hid'
 import {usb, WebUSB} from 'usb'
-import type { ModuleSync } from './types';
+import type { CODES, HALF, ModuleSync } from './types';
 import {EventEmitter} from 'events'
 
 const webusb = new WebUSB({
@@ -68,8 +68,13 @@ export class Device extends EventEmitter {
     
     }
 
-    write = (msg: number[] | Buffer) => {
-        if (this.device) this.device.write(msg)
+    // Write to HID Device, adding in the default config bytes
+    write = (command: CODES, half:HALF, data: number[] | Buffer | Uint8Array) => {
+        if (!this.device) return
+        var buffer: any[] = []
+        if (process.platform == "win32") buffer.push(0xFF)
+        buffer.push(0x07, 0x00, command, half, ...data)
+        this.device.write(buffer)
     }
     
 }

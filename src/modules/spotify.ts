@@ -116,7 +116,7 @@ export const getUserPlayback = async (d: Device, c: Config) => {
         uploadImage(d, CODES.IMAGE, HALF.SLAVE, image, 64, 64)
 
         // Upload Name
-        d.write([0xFF, 0x07, 0x00, CODES.NOW_PLAYING, 0x01, ...string2bytes(response.item.name)])
+        d.write( CODES.NOW_PLAYING, 0x01, string2bytes(response.item.name))
     }
 }
 

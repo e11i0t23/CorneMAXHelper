@@ -8,15 +8,15 @@ import dayjs from 'dayjs'
 export const syncSystemStats = async (d: Device, half: HALF) => {
     // mem
     let mem = await si.mem()
-    d.write(new Uint8Array([0xFF, 0x07, 0x00, CODES.RAM, half, Math.round(mem.active / (mem.used + mem.free) * 100)]) as Buffer)
+    d.write(CODES.RAM, half, [Math.round(mem.active / (mem.used + mem.free) * 100)])
     // cpu
     let cpu = await si.currentLoad()
-    d.write(new Uint8Array([0xFF, 0x07, 0x00, CODES.CPU, half, (Math.round(cpu.currentLoad))]) as Buffer)
+    d.write(CODES.CPU, half, [Math.round(cpu.currentLoad)])
     // // gpu
     let gpu = await si.graphics()
-    d.write(new Uint8Array([0xFF, 0x07, 0x00, CODES.GPU, half, (Math.round(gpu.controllers[0].utilizationGpu || 0))]) as Buffer)
+    d.write(CODES.GPU, half, [Math.round(gpu.controllers[0].utilizationGpu || 0)])
     // time
     let data = new Date(); // for now
-    d.write(new Uint8Array([0xFF, 0x07, 0x00, CODES.TIME, half, ...string2bytes(`${dayjs(data).format("hh:mm")}`)]) as Buffer)
+    d.write(CODES.TIME, half, string2bytes(`${dayjs(data).format("hh:mm")}`))
 
 }
