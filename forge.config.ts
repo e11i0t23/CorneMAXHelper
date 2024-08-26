@@ -10,7 +10,7 @@ import path from 'path'
 module.exports = {
   packagerConfig: {
     asar: true,
-    icon: './images/icon.png',
+    icon: './images/icon',
     extraResource: [
       path.join(__dirname, './images/icon.png'), 
       path.join(__dirname, './images/icon.ico'),
@@ -22,7 +22,7 @@ module.exports = {
     {
       name: '@electron-forge/maker-squirrel',
       config: {
-        iconUrl: 'https://mechboards.co.uk/cdn/shop/files/Artboard_2_copy_2_3x_b4ac734d-1aed-4cec-96cc-2263b710dcba_680x.png',
+        iconUrl: 'https://raw.githubusercontent.com/e11i0t23/displayDriveTray/main/images/icon.ico',
         // The ICO file to use as the icon for the generated Setup.exe
         setupIcon: './images/icon.ico'
       },
