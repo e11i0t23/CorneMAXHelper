@@ -1,8 +1,6 @@
 import { app, Tray, Menu, nativeImage, BrowserWindow, shell, protocol, session, dialog } from 'electron'
 import HID, { HIDAsync } from 'node-hid'
 import {usb, WebUSB} from 'usb'
-import si from 'systeminformation';
-import dayjs from 'dayjs'
 // const { SpotifyApi } = require('@spotify/web-api-ts-sdk');
 import { convertImageBlob } from "./converter";
 import { ImageMode, OutputMode, CODES, HALF, ConfigStore } from './types';
@@ -13,6 +11,7 @@ import {Config, string2bytes} from "./helpers"
 import { uploadImage } from './uploadImage';
 
 import {spotifyAuth, getUserPlayback} from './modules/spotify'
+import {syncSystemStats} from './modules/systemStats'
 
 
 const userDataPath = app.getPath("userData")
@@ -91,7 +90,7 @@ const connectToDevice = async () => {
         if (!hiddev) return false
         connected = true;
         console.log('Connected to device')
-        intervalIDSync = setInterval(sync, 5000)
+        intervalIDSync = setInterval(syncSystemStats, 5000, hiddev, HALF.MASTER)
         intervalIDSpotify = setInterval(getUserPlayback, 10000, config, hiddev)
         // getUserPlayback()
         tray.setContextMenu(contextMenu())
@@ -152,24 +151,6 @@ usb.on('detach', (device) => {
 
 //     }
 // });
-
-
-const sync = async () => {
-    var half = HALF.MASTER
-    // mem
-    let mem = await si.mem()
-    hiddev.write(new Uint8Array([0xFF, 0x07, 0x00, CODES.RAM, half, Math.round(mem.active / (mem.used + mem.free) * 100)]) as Buffer)
-    // cpu
-    let cpu = await si.currentLoad()
-    hiddev.write(new Uint8Array([0xFF, 0x07, 0x00, CODES.CPU, half, (Math.round(cpu.currentLoad) )])as Buffer)
-    // // gpu
-    let gpu = await si.graphics()
-    hiddev.write(new Uint8Array([0xFF, 0x07, 0x00, CODES.GPU, half, (Math.round(gpu.controllers[0].utilizationGpu || 0) )])as Buffer)
-    // time
-    let d = new Date(); // for now
-    hiddev.write(new Uint8Array([0xFF, 0x07, 0x00, CODES.TIME, half, ...string2bytes(`${dayjs(d).format("hh:mm")}`)])as Buffer)
-    // hiddev.write([0xFF, CODES.TIME, ...string2bytes(`${dayjs(d).format("hh:mm")}`)])
-}
 
 const uploadCustomImage = async (half: number) => {
     const OF = await dialog.showOpenDialog({ properties: ['openFile'], filters: [{ name: 'Images', extensions: ['png', 'jpg', 'jpeg'] }] })
