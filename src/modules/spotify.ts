@@ -1,10 +1,10 @@
 import type { Config } from "../helpers";
-import type { HIDAsync } from "node-hid";
 import { string2bytes } from "../helpers";
 import { CODES, HALF } from "../types";
 import { uploadImage } from "../uploadImage";
 import { loadImage } from "@napi-rs/canvas";
 import { BrowserWindow } from "electron";
+import { Device } from "../device";
 
 let codeVerifier: string
 let nowPlaying: number | undefined
@@ -16,7 +16,6 @@ export const spotifyAuth = async (c: Config) => {
     codeVerifier = generateRandomString(64);
     const hashed = await sha256(codeVerifier)
     const codeChallenge = base64encode(hashed);
-    // const redirectUri = 'http://localhost.com:3961/spotify-callback';
 
     const scope = 'user-read-playback-state';
     const authUrl = new URL("https://accounts.spotify.com/authorize")
@@ -92,7 +91,7 @@ const handleSpotifyCallback = async (code:string, c:Config) => {
     c.updateConfig({...c.config, accessToken: response.access_token, refreshToken: response.refresh_token})
 }
 
-export const getUserPlayback = async (c: Config, d: HIDAsync) => {
+export const getUserPlayback = async (d: Device, c: Config) => {
     let buffer: Uint8Array[] = []
     const payload = {
         method: 'GET',

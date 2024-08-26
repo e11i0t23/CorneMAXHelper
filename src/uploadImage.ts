@@ -1,10 +1,10 @@
 import type { Image } from "@napi-rs/canvas";
 import { CODES, HALF, ImageMode, OutputMode } from "./types";
-import type { HIDAsync } from "node-hid";
+import type { Device } from "./device";
 import { convertImageBlob } from "./converter";
 import {splitUint16} from "./helpers"
 
-export const uploadImage = async (dev: HIDAsync, code: CODES, half: HALF, image: Image, w: number, h:number ) => {
+export const uploadImage = async (dev: Device, code: CODES, half: HALF, image: Image, w: number, h:number ) => {
     let buffer: Uint8Array[] = []
     const convertedImage = await convertImageBlob(image, {
         dith: false,

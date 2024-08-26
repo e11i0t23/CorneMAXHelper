@@ -1,11 +1,11 @@
-import type { HIDAsync } from "node-hid"
+import type { Device } from "../device";
 import { CODES, HALF } from "../types"
 import { string2bytes } from "../helpers";
 
 import si from 'systeminformation';
 import dayjs from 'dayjs'
 
-export const syncSystemStats = async (d: HIDAsync, half: HALF) => {
+export const syncSystemStats = async (d: Device, half: HALF) => {
     // mem
     let mem = await si.mem()
     d.write(new Uint8Array([0xFF, 0x07, 0x00, CODES.RAM, half, Math.round(mem.active / (mem.used + mem.free) * 100)]) as Buffer)

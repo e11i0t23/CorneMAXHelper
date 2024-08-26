@@ -1,39 +1,24 @@
-import { app, Tray, Menu, nativeImage, BrowserWindow, shell, protocol, session, dialog } from 'electron'
-import HID, { HIDAsync } from 'node-hid'
-import {usb, WebUSB} from 'usb'
-// const { SpotifyApi } = require('@spotify/web-api-ts-sdk');
-import { convertImageBlob } from "./converter";
-import { ImageMode, OutputMode, CODES, HALF, ConfigStore } from './types';
+import { app, Tray, Menu, nativeImage, dialog } from 'electron'
 import { loadImage } from '@napi-rs/canvas';
 import path from "path"
-import {readFileSync} from "fs"
-import {Config, string2bytes} from "./helpers"
+
+
+import { Config } from "./helpers"
+import { Device } from './device';
+
+import { CODES, HALF } from './types';
+
 import { uploadImage } from './uploadImage';
 
-import {spotifyAuth, getUserPlayback} from './modules/spotify'
-import {syncSystemStats} from './modules/systemStats'
+import { spotifyAuth, getUserPlayback } from './modules/spotify'
+import { syncSystemStats } from './modules/systemStats'
 
 
 const userDataPath = app.getPath("userData")
 
 let config: Config
 let tray: Tray
-let intervalIDSync: any
-let intervalIDSpotify: any
-let hiddev: HIDAsync
-let connected = false
-
-const webusb = new WebUSB({
-    allowAllDevices: true
-});
-
-const connectSpotify = () => {
-    console.log('Connecting to Spotify')
-    // const sdk = SpotifyApi.performUserAuthorization(client_id, "http://localhost.com:3961/spotify-callback", ["user-read-playback-state"], (accesstoken) => {
-    //     console.log(accesstoken)
-    // });
-    spotifyAuth(config)
-}
+let device: Device
 
 if (require('electron-squirrel-startup')) {
     console.log("quitting")
@@ -41,16 +26,16 @@ if (require('electron-squirrel-startup')) {
 }
 
 if (!app.requestSingleInstanceLock()) {
-  app.quit()
+    app.quit()
 }
 
-const contextMenu = () => Menu.buildFromTemplate(connected ? [
-    { label: "Connected"  },
+const contextMenu = (connected: boolean) => Menu.buildFromTemplate(connected ? [
+    { label: "Connected" },
     // { label: 'Link Spotify', click: connectSpotify },
     { label: 'Upload Master', click: () => uploadCustomImage(HALF.MASTER) },
     { label: 'Upload Slave', click: () => uploadCustomImage(HALF.SLAVE) },
     { label: 'Quit', click: app.quit }
-]: [
+] : [
     { label: "Disconnected" },
     { label: 'Quit', click: app.quit }
 ])
@@ -60,102 +45,39 @@ app.on("ready", async () => {
     // const partition = 'persist:electron'
     // const ses = session.fromPartition(partition)
     // console.log(path.join(path.dirname(), "logo.png"))
-    const icon = nativeImage.createFromPath( path.join(__dirname, "./images/logoTemplate.png"))
+    const icon = nativeImage.createFromPath(path.join(__dirname, "./images/logoTemplate.png"))
     tray = new Tray(icon)
     tray.setToolTip('Mechboards Max Helper')
-    tray.setContextMenu(contextMenu())
+    tray.setContextMenu(contextMenu(false))
     console.log('Tray created')
+
+    // device sends self as first arg automatically to all modules
+    device = new Device([{ f: getUserPlayback, freq: 5000, args: [config] }, { f: syncSystemStats, freq: 5000, args: [HALF.MASTER] }])
+    device.on("connected", () => {
+        tray.setContextMenu(contextMenu(true))
+    })
+    device.on("disconnected", () => {
+        tray.setContextMenu(contextMenu(false))
+    })
+
+
 
     // ses.protocol.handle('mechboards', (request) => {
     //     console.log(request.url)
     //     const filePath = request.url.slice('mechboards://'.length)
     //     return
     // })
-
-    connectToDevice()
 })
 
-const connectToDevice = async () => {
-
-    // See if the keyboard is already connected to the PC, if it is connect to the HID device otherwise watch for its connection
-    var devices = await HID.devicesAsync();
-    // console.log(devices.filter(device => device.vendorId == 18003))
-    var device = devices.find(device => device.vendorId == 0x4653 && device.productId == 0x0001 && device.usagePage == 0xFF60 && device.usage == 0x61);
-    // device = devices.find(device => device.vendorId == 18003 && device.productId == 1 && device.usagePage == 65376 && device.usage == 116);
-    if (!device) return false
-    try {
-        if (!device.path) throw("not string")
-        hiddev = await HID.HIDAsync.open(device.path);
-        // console.log(hiddev.getDeviceInfo())
-        if (!hiddev) return false
-        connected = true;
-        console.log('Connected to device')
-        intervalIDSync = setInterval(syncSystemStats, 5000, hiddev, HALF.MASTER)
-        intervalIDSpotify = setInterval(getUserPlayback, 10000, config, hiddev)
-        // getUserPlayback()
-        tray.setContextMenu(contextMenu())
-        return true
-
-    } catch (error) {
-        console.error(error)
-        setTimeout(connectToDevice, 1000)
-    }
-
+const connectSpotify = () => {
+    console.log('Connecting to Spotify')
+    spotifyAuth(config)
 }
-
-// webusb.addEventListener('connect', async (device) => {
-//     device = device.device
-//     if (connected) return
-//     if (!(device.vendorId == Number(0x4653) && device.productId == Number(0x0001))) return
-//     console.log('Keyboard attached, connecting to device')
-//     connectToDevice()
-
-// });
-
-usb.on("attach", async (device) => {
-
-    if (connected) return
-    if (!(device.deviceDescriptor.idVendor == Number(0x4653) && device.deviceDescriptor.idProduct == Number(0x0001))) return
-    console.log('Keyboard attached, connecting to device')
-    connectToDevice()
-})
-
-usb.on('detach', (device) => {
-    console.log("something disconnected")
-    if (device.deviceDescriptor.idVendor == Number(0x4653) && device.deviceDescriptor.idProduct == Number(0x0001)) {
-        connected = false;
-        hiddev.close()
-        hiddev;
-        tray.setContextMenu(contextMenu())
-        console.log("Discconected device")
-        try {
-            clearInterval(intervalIDSync)
-            clearInterval(intervalIDSpotify)
-        } catch (error) { }
-
-    }
-});
-// webusb.addEventListener('disconnect', (device) => {
-//     console.log("something disconnected")
-//     device = device.device
-//     if (device.vendorId == Number(0x4653) && device.productId == Number(0x0001)) {
-//         connected = false;
-//         hiddev.close()
-//         hiddev = null;
-//         tray.setContextMenu(contextMenu())
-//         console.log("Discconected device")
-//         try {
-//             clearInterval(intervalIDSync)
-//             clearInterval(intervalIDSpotify)
-//         } catch (error) { }
-
-//     }
-// });
 
 const uploadCustomImage = async (half: number) => {
     const OF = await dialog.showOpenDialog({ properties: ['openFile'], filters: [{ name: 'Images', extensions: ['png', 'jpg', 'jpeg'] }] })
     if (OF.canceled) return
     if (OF.filePaths.length == 0) return
     const image = await loadImage(OF.filePaths[0])
-    uploadImage(hiddev, CODES.IMG_FULLSIZE, half, image, 80, 160)
+    uploadImage(device, CODES.IMG_FULLSIZE, half, image, 80, 160)
 }

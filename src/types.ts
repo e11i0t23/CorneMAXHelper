@@ -62,3 +62,9 @@ export interface ConfigStore {
     accessToken: string | null, 
     refreshToken: string | null
 }
+
+export type ModuleSync = {
+    f: Function,
+    args: any[],
+    freq: number
+}
