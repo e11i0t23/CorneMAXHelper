@@ -45,7 +45,7 @@ export const syncSystemStats = async (d: Device, half: HALF) => {
   let date = new Date(); // time now
   let time = dayjs(date).format("hh:mm");
   if (time !== lastTime) {
-    d.write(CODES.TIME, half, string2bytes(time));
+    d.write(CODES.TIME, HALF.SLAVE, string2bytes(time));
     lastTime = time;
   }
 };
