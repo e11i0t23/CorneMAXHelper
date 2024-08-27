@@ -62,8 +62,8 @@ app.on("ready", async () => {
   // Initialize device class and modules
   // device sends self as first arg automatically to all modules
   device = new Device([
-    { f: getUserPlayback, freq: 5000, args: [config] },
-    { f: syncSystemStats, freq: 5000, args: [HALF.MASTER] },
+    { f: getUserPlayback, freq: 2000, args: [config] },
+    { f: syncSystemStats, freq: 2000, args: [HALF.MASTER] },
   ]);
 
   // update connection status in tray based on device connection events

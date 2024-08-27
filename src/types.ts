@@ -16,7 +16,7 @@ export enum CODES {
   CPU = 0x01,
   GPU = 0x02,
   RAM = 0x03,
-  VOL = 0x04,
+  PROGRESS = 0x04,
   NOW_PLAYING = 0x05,
   IMAGE = 0x06,
   IMG_FULLSIZE = 0x07,

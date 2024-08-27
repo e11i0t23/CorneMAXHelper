@@ -9,6 +9,7 @@ import { Device } from "../device";
 let codeVerifier: string;
 let nowPlaying: number | undefined;
 let inauth = false;
+let lastProgress: number = 0;
 
 const clientId = process.env.CLIENT_ID || "";
 const redirectUri = "http://localhost.com:3961/spotify-callback";
@@ -159,14 +160,23 @@ export const getUserPlayback = async (d: Device, c: Config) => {
   }
   // If no item is playing, return
   if (!response.item) return false;
-  // If the item playing is the same as the last one, return
-  if (response.item.id == nowPlaying) return false;
-  nowPlaying = response.item.id;
-  // Upload Album Art
-  const image = await loadImage(response.item.album.images[2].url);
-  uploadImage(d, CODES.IMAGE, HALF.SLAVE, image, 64, 64);
-  // Upload Name
-  d.write(CODES.NOW_PLAYING, 0x01, string2bytes(response.item.name));
+
+  // Calculate the progress of the current item
+  let progress = Math.round((response.progress_ms / response.item.duration_ms) * 100);
+  if (Math.abs(progress - lastProgress) > 1) {
+    d.write(CODES.PROGRESS, HALF.SLAVE, [progress]);
+    lastProgress = progress;
+  }
+  // If the item playing is not the same as the last one uploaded, upload the new item
+  if (response.item.id != nowPlaying) {
+    nowPlaying = response.item.id;
+    // Upload Album Art
+    const image = await loadImage(response.item.album.images[2].url);
+    uploadImage(d, CODES.IMAGE, HALF.SLAVE, image, 64, 64);
+    // Upload Name
+    d.write(CODES.NOW_PLAYING, 0x01, string2bytes(response.item.name));
+  }
+  return true;
 };
 
 /**
