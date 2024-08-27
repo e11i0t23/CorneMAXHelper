@@ -44,6 +44,20 @@ module.exports = {
       config: {},
     },
   ],
+  publishers: [
+    {
+      name: '@electron-forge/publisher-github',
+      config: {
+        repository: {
+          owner: 'e11i0t23',
+          name: 'displayDriveTray',
+        },
+        draft: true,
+        prerelease: false,
+        generateReleaseNotes: true,
+      },
+    },
+  ],
   plugins: [
     {
       name: "@electron-forge/plugin-auto-unpack-natives",

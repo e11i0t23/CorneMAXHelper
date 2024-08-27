@@ -38,6 +38,9 @@ jobs:
           NODE_ENV: production
         run: npm run make
 
+      - name: publish
+        run: npm run publish
+
       - name: Archive production artifacts
         uses: actions/upload-artifact@v4
         with:
