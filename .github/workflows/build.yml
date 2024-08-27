@@ -41,7 +41,7 @@ jobs:
       - name: Archive production artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: out/make
+          name: out
           path: |
-            out
+            out/make
             
