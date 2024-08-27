@@ -37,9 +37,7 @@ export const spotifyAuth = async (c: Config) => {
   const win = new BrowserWindow({ width: 800, height: 600, icon: "./images/icon" });
 
   win.loadURL(authUrl.toString());
-  // win.webContents.openDevTools()
   win.webContents.on("will-navigate", (event, url) => {
-    // console.log("will-navigate", url)
     if (!url.startsWith(redirectUri)) return;
     const urlParams = new URLSearchParams(url.replace(redirectUri + "?", ""));
     // console.log(urlParams)
@@ -48,8 +46,6 @@ export const spotifyAuth = async (c: Config) => {
     event.preventDefault();
     win.hide();
   });
-  // Load a remote URL
-  // shell.openExternal(authUrl.toString())
 };
 
 const generateRandomString = (length: number) => {
@@ -89,7 +85,6 @@ const handleSpotifyCallback = async (code: string, c: Config) => {
 
   const body = await fetch("https://accounts.spotify.com/api/token", payload);
   const response = await body.json();
-  // console.log(response)
   c.updateConfig({ ...c.config, accessToken: response.access_token, refreshToken: response.refresh_token });
   inauth = false;
 };
@@ -109,7 +104,7 @@ export const getUserPlayback = async (d: Device, c: Config) => {
   const response = await body.json();
   if (response.error) {
     if (response.error.status == 401) {
-      refreshSpotifyToken(getUserPlayback, c);
+      refreshSpotifyToken(getUserPlayback, c, [d, c]);
     }
     return;
   }
@@ -124,7 +119,7 @@ export const getUserPlayback = async (d: Device, c: Config) => {
   }
 };
 
-const refreshSpotifyToken = async (func: any, c: Config) => {
+const refreshSpotifyToken = async (func: any, c: Config, args?: any[]) => {
   inauth = true;
   const url = "https://accounts.spotify.com/api/token";
 
@@ -145,6 +140,7 @@ const refreshSpotifyToken = async (func: any, c: Config) => {
   if (body.status == 200) {
     c.updateConfig({ ...c.config, accessToken: response.access_token, refreshToken: response.refresh_token });
     inauth = false;
+    if (args) return func(...args);
     return func();
   } else {
     console.log(response);
