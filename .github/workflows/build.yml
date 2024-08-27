@@ -16,6 +16,11 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
+
+      # Conditional step to install libusb on Linux
+      - name: Install libusb on Linux
+        if: matrix.os == 'ubuntu-latest'
+        run: sudo apt-get update && sudo apt-get install -y libusb-1.0-0-dev
           
       - run: npm ci
 
