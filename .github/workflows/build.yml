@@ -3,7 +3,6 @@ run-name: Build-Electron-Forge
 on: [push]
 jobs:
   build:
-    environment: production
     strategy:
       matrix:
         os: ["ubuntu-latest", "macos-latest", "windows-latest"]
@@ -35,6 +34,7 @@ jobs:
       - name: Make App
         env: 
           CLIENT_ID: ${{ secrets.client_id }}
+          NODE_ENV: production
         run: npm run make
 
       - name: Archive production artifacts
