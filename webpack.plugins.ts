@@ -27,9 +27,9 @@ const commonPlugins = [
   new DefinePlugin(isDevelopment ? developmentDefines : productionDefines),
 ]
 
-const productionPlugins = []
+const productionPlugins: any[] = []
 
-const developmentPlugins = [
+const developmentPlugins: any[] = [
   new Dotenv(),
 ]
 
