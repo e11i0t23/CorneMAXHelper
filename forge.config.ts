@@ -11,7 +11,7 @@ module.exports = {
   packagerConfig: {
     asar: true,
     icon: path.join(__dirname, "images", "icon"),
-    extraResource: [path.join(__dirname, "images","icon.png"), path.join(__dirname, "images","icon.ico"), path.join(__dirname, "images", "icon.icns")],
+    extraResource: [path.join(__dirname, "images", "icon.png"), path.join(__dirname, "images", "icon.ico"), path.join(__dirname, "images", "icon.icns")],
   },
   rebuildConfig: {},
   makers: [
@@ -25,14 +25,17 @@ module.exports = {
       platforms: ["win32"],
     },
     {
-      name: "@electron-forge/maker-zip",
+      name: "@electron-forge/maker-dmg",
+      config: {
+        icon: path.join(__dirname, "images", "icon.icns"),
+      },
       platforms: ["darwin"],
     },
     {
       name: "@electron-forge/maker-deb",
       config: {
         options: {
-          icon: path.join(__dirname, "images" ," icon.png")
+          icon: path.join(__dirname, "images", " icon.png"),
         },
       },
     },
@@ -51,12 +54,12 @@ module.exports = {
     new WebpackPlugin({
       mainConfig,
       renderer: {
-        config: {},
+        config: rendererConfig,
         entryPoints: [
           {
+            name: "main_window",
             html: path.join(__dirname, "src", "index.html"),
             js: path.join(__dirname, "src", "renderer.ts"),
-            name: "",
           },
         ],
       },
