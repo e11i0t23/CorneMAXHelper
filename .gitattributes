@@ -1,0 +1,47 @@
+# auto for anything unspecified
+* text=auto
+
+# sources
+*.c      text eol=lf
+*.cpp    text eol=lf
+*.c++    text eol=lf
+*.css    text eol=lf
+*.html   text eol=lf
+*.js     text eol=lf
+*.jsx    text eol=lf
+*.json   text eol=lf
+*.ts     text eol=lf
+*.tss     text eol=lf
+*.env     text eol=lf
+
+# documentation
+
+*.md         text eol=lf
+LICENSE      text eol=lf
+readme       text eol=lf
+*README*     text eol=lf
+
+
+GRAPHICS
+*.ai   binary
+*.bmp  binary
+*.eps  binary
+*.gif  binary
+*.ico  binary
+*.icns binary
+*.jng  binary
+*.jp2  binary
+*.jpg  binary
+*.jpeg binary
+*.jpx  binary
+*.jxr  binary
+*.pdf  binary
+*.png  binary
+*.psb  binary
+*.psd  binary
+*.svg  text eol=lf
+*.svgz binary
+*.tif  binary
+*.tiff binary
+*.wbmp binary
+*.webp binary
