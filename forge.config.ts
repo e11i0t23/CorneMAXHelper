@@ -20,7 +20,7 @@ module.exports = {
       config: {
         iconUrl: "https://raw.githubusercontent.com/e11i0t23/displayDriveTray/main/images/icon.ico",
         // The ICO file to use as the icon for the generated Setup.exe
-        setupIcon: path.join(__dirname, "images" ," icon.ico"),
+        setupIcon: path.join(__dirname, "images", "icon.ico"),
       },
       platforms: ["win32"],
     },
