@@ -1,53 +1,49 @@
-import type { ForgeConfig } from '@electron-forge/shared-types';
-import { FusesPlugin }  from '@electron-forge/plugin-fuses';
-import { WebpackPlugin } from '@electron-forge/plugin-webpack';
-import { FuseV1Options, FuseVersion } from '@electron/fuses';
+import type { ForgeConfig } from "@electron-forge/shared-types";
+import { FusesPlugin } from "@electron-forge/plugin-fuses";
+import { WebpackPlugin } from "@electron-forge/plugin-webpack";
+import { FuseV1Options, FuseVersion } from "@electron/fuses";
 
-import { mainConfig } from './webpack.main.config';
-import { rendererConfig } from './webpack.renderer.config';
-import path from 'path'
+import { mainConfig } from "./webpack.main.config";
+import { rendererConfig } from "./webpack.renderer.config";
+import path from "path";
 
 module.exports = {
   packagerConfig: {
     asar: true,
-    icon: './images/icon',
-    extraResource: [
-      path.join(__dirname, './images/icon.png'), 
-      path.join(__dirname, './images/icon.ico'),
-      path.join(__dirname, './images/icon.icns'),
-    ]
+    icon: "./images/icon",
+    extraResource: [path.join(__dirname, "./images/icon.png"), path.join(__dirname, "./images/icon.ico"), path.join(__dirname, "./images/icon.icns")],
   },
   rebuildConfig: {},
   makers: [
     {
-      name: '@electron-forge/maker-squirrel',
+      name: "@electron-forge/maker-squirrel",
       config: {
-        iconUrl: 'https://raw.githubusercontent.com/e11i0t23/displayDriveTray/main/images/icon.ico',
+        iconUrl: "https://raw.githubusercontent.com/e11i0t23/displayDriveTray/main/images/icon.ico",
         // The ICO file to use as the icon for the generated Setup.exe
-        setupIcon: './images/icon.ico'
+        setupIcon: "./images/icon.ico",
       },
-      platforms: ['win32']
+      platforms: ["win32"],
     },
     {
-      name: '@electron-forge/maker-zip',
-      platforms: ['darwin'],
+      name: "@electron-forge/maker-zip",
+      platforms: ["darwin"],
     },
     {
-      name: '@electron-forge/maker-deb',
+      name: "@electron-forge/maker-deb",
       config: {
         options: {
-          icon: './images/icon.png'
-        }
+          icon: "./images/icon.png",
+        },
       },
     },
     {
-      name: '@electron-forge/maker-rpm',
+      name: "@electron-forge/maker-rpm",
       config: {},
     },
   ],
   plugins: [
     {
-      name: '@electron-forge/plugin-auto-unpack-natives',
+      name: "@electron-forge/plugin-auto-unpack-natives",
       config: {},
     },
     // Fuses are used to enable/disable various Electron functionality
@@ -58,19 +54,19 @@ module.exports = {
         config: {},
         entryPoints: [
           {
-            html: './src/index.html',
-            js: './src/renderer.ts',
-            name: '',
+            html: "./src/index.html",
+            js: "./src/renderer.ts",
+            name: "",
           },
         ],
       },
     }),
     {
-      name:'@timfish/forge-externals-plugin',
-      config:{
-        externals: ['node-hid', 'usb'],
-        includeDeps: true
-      }
+      name: "@timfish/forge-externals-plugin",
+      config: {
+        externals: ["node-hid", "usb"],
+        includeDeps: true,
+      },
     },
     new FusesPlugin({
       version: FuseVersion.V1,
