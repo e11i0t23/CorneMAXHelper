@@ -7,16 +7,29 @@ const webusb = new WebUSB({
   allowAllDevices: true,
 });
 
+/**
+ * Device class to handle communication with the keyboard
+ *
+ * @export
+ * @class Device
+ * @typedef {Device}
+ * @extends {EventEmitter}
+ */
 export class Device extends EventEmitter {
   device: HIDAsync | null;
   intervalIDs: any[] = [];
   modules: ModuleSync[] = [];
 
+  /**
+   * @constructor
+   * @param {ModuleSync[]} modules - The modules to sync to the device
+   */
   constructor(modules: ModuleSync[]) {
     super();
     this.modules = modules;
     this.connectToDevice();
 
+    // Initialise USB event listeners to detect when the keyboard is connected
     usb.on("attach", async (attached) => {
       if (this.device) return;
       if (!(attached.deviceDescriptor.idVendor == Number(0x4653) && attached.deviceDescriptor.idProduct == Number(0x0001))) return;
@@ -24,12 +37,11 @@ export class Device extends EventEmitter {
       this.connectToDevice();
     });
 
+    // Initialise USB event listeners to detect when the keyboard is disconnected
     usb.on("detach", (device) => {
-      console.log("something disconnected");
       if (device.deviceDescriptor.idVendor == Number(0x4653) && device.deviceDescriptor.idProduct == Number(0x0001)) {
         this.device = null;
-        // tray.setContextMenu(contextMenu())
-        console.log("Discconected device");
+        console.log("Device Discconected");
         this.emit("disconnected");
         this.intervalIDs.forEach((id) => {
           clearInterval(id);
@@ -38,37 +50,51 @@ export class Device extends EventEmitter {
     });
   }
 
+  /**
+   * Attempt to connect to the HID device
+   *
+   * @async
+   * @returns {Promise<boolean>} - Whether the device was connected successfully
+   */
   connectToDevice = async () => {
-    // See if the keyboard is already connected to the PC, if it is connect to the HID device otherwise watch for its connection
+    // Get all HID devices
     var devices = await HID.devicesAsync();
-    // console.log(devices.filter(device => device.vendorId == 18003))
+    // Filter for the keyboard device
     var device = devices.find((device) => device.vendorId == 0x4653 && device.productId == 0x0001 && device.usagePage == 0xff60 && device.usage == 0x61);
-    // device = devices.find(device => device.vendorId == 18003 && device.productId == 1 && device.usagePage == 65376 && device.usage == 116);
-    if (!device) return;
+    // if no device found, return false
+    if (!device) return false;
     try {
-      if (!device.path) throw "not string";
+      if (!device.path) throw "no device path";
+      // Open the HID device
       this.device = await HID.HIDAsync.open(device.path);
-      // console.log(hiddev.getDeviceInfo())
-      if (!this.device) return;
+      if (!this.device) return false;
       console.log("Connected to device");
       this.emit("connected");
+      // load the modules to be sysnced
       this.modules.forEach((m) => {
         this.intervalIDs.push(setInterval(m.f, m.freq, this, ...m.args));
       });
-      // tray.setContextMenu(contextMenu())
       return true;
     } catch (error) {
       console.error(error);
-      // setTimeout(connectToDevice, 1000)
+      return false;
     }
   };
 
-  // Write to HID Device, adding in the default config bytes
-  write = (command: CODES, half: HALF, data: number[] | Buffer | Uint8Array) => {
-    if (!this.device) return;
+  /**
+   * Write to HID Device, adding in the default config bytes
+   *
+   * @async
+   * @param {CODES} command - The command code to write
+   * @param {HALF} half - The half of the keyboard to write to
+   * @param {(number[] | Buffer | Uint8Array)} data - The data to write
+   * @returns {Promise<boolean>} - Whether the write was successful
+   */
+  write = async (command: CODES, half: HALF, data: number[] | Buffer | Uint8Array): Promise<boolean> => {
+    if (!this.device) return false;
     var buffer: any[] = [];
     if (process.platform == "win32") buffer.push(0xff);
     buffer.push(0x07, 0x00, command, half, ...data);
-    this.device.write(buffer);
+    return (await this.device.write(buffer)) > data.length;
   };
 }

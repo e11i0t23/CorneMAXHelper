@@ -32,16 +32,17 @@ export class Converter {
   b_act: number;
   g_act: number;
 
-  r_nerr; /*Classification error for next pixel*/
-  g_nerr;
-  b_nerr;
+  /*For dithering*/
+  r_earr: Array<number>; /*Classification error for next row of pixels*/
+  g_earr: Array<number>;
+  b_earr: Array<number>;
 
-  r_earr;
-  g_earr;
-  b_earr;
+  r_nerr: number; /*Classification error for next pixel*/
+  g_nerr: number;
+  b_nerr: number;
 
   /* Current pass being made */
-  pass;
+  pass: number;
 
   constructor(w: number, h: number, imageData: any, alpha: boolean, options: ConverterOptions) {
     this.w = w;
