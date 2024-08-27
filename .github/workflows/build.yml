@@ -1,0 +1,33 @@
+name: Build-Electron-Forge
+run-name: Build-Electron-Forge
+on: [push]
+jobs:
+  build:
+    strategy:
+      matrix:
+        os: ["ubuntu-latest", "macos-latest", "windows-latest"]
+        
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Github checkout
+        uses: actions/checkout@v4
+        
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          
+      - run: npm ci
+
+      - name: Make App
+        env: 
+          CLIENT_ID: ${{ secrets.client_id }}
+        run: npm run make
+
+      - name: Archive production artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: out/make
+          path: |
+            out
+            
