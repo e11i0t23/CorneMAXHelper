@@ -35,11 +35,11 @@
     "fork-ts-checker-webpack-plugin": "^9.0.2",
     "ts-loader": "^9.5.1",
     "ts-node": "^10.9.2",
-    "typescript": "^5.5.4"
+    "typescript": "^5.5.4",
+    "webpack": "^5.94.0"
   },
   "dependencies": {
     "@napi-rs/canvas": "^0.1.53",
-    "@spotify/web-api-ts-sdk": "^1.2.0",
     "dayjs": "^1.11.11",
     "electron-squirrel-startup": "^1.0.1",
     "image-q": "^4.0.0",

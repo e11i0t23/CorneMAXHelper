@@ -11,7 +11,9 @@ let nowPlaying: number | undefined;
 let inauth = false;
 let lastProgress: number = 0;
 
-const clientId = process.env.CLIENT_ID || "";
+declare const CLIENT_ID: string;
+declare const DEVELOPMENT: boolean;
+const clientId = DEVELOPMENT ? process.env.CLIENT_ID || "" : CLIENT_ID;
 const redirectUri = "http://localhost.com:3961/spotify-callback";
 
 /**
