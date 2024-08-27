@@ -10,8 +10,8 @@ import path from "path";
 module.exports = {
   packagerConfig: {
     asar: true,
-    icon: "./images/icon",
-    extraResource: [path.join(__dirname, "./images/icon.png"), path.join(__dirname, "./images/icon.ico"), path.join(__dirname, "./images/icon.icns")],
+    icon: path.join(__dirname, "images", "icon"),
+    extraResource: [path.join(__dirname, "images","icon.png"), path.join(__dirname, "images","icon.ico"), path.join(__dirname, "images", "icon.icns")],
   },
   rebuildConfig: {},
   makers: [
@@ -20,7 +20,7 @@ module.exports = {
       config: {
         iconUrl: "https://raw.githubusercontent.com/e11i0t23/displayDriveTray/main/images/icon.ico",
         // The ICO file to use as the icon for the generated Setup.exe
-        setupIcon: "./images/icon.ico",
+        setupIcon: path.join(__dirname, "images" ," icon.ico"),
       },
       platforms: ["win32"],
     },
@@ -32,7 +32,7 @@ module.exports = {
       name: "@electron-forge/maker-deb",
       config: {
         options: {
-          icon: "./images/icon.png",
+          icon: path.join(__dirname, "images" ," icon.png")
         },
       },
     },
@@ -54,8 +54,8 @@ module.exports = {
         config: {},
         entryPoints: [
           {
-            html: "./src/index.html",
-            js: "./src/renderer.ts",
+            html: path.join(__dirname, "src", "index.html"),
+            js: path.join(__dirname, "src", "renderer.ts"),
             name: "",
           },
         ],
