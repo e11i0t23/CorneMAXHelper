@@ -32,13 +32,17 @@ jobs:
 
       - run: npm ci
 
-      - name: Make App
+      # - name: Make App
+      #   env:
+      #     CLIENT_ID: ${{ secrets.client_id }}
+      #     NODE_ENV: production
+      #   run: npm run make
+
+      - name: Publish App
         env:
           CLIENT_ID: ${{ secrets.client_id }}
           NODE_ENV: production
-        run: npm run make
-
-      - name: publish
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}     
         run: npm run publish
 
       - name: Archive production artifacts
