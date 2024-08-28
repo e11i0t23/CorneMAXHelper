@@ -215,6 +215,8 @@ const refreshSpotifyToken = async (func: any, c: Config, args?: any[]) => {
     return func();
   } else {
     console.log(response);
+    // we set inauth to false here because it will be set to true again in spotifyAuth, but would prevent spotifyAuth rrunning if left true
+    inauth = false
     spotifyAuth(c);
   }
 };
