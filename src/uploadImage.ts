@@ -4,6 +4,10 @@ import type { Device } from "./device";
 import { convertImageBlob } from "./converter";
 import { splitUint16 } from "./helpers";
 
+import log from "electron-log/node"
+
+log.errorHandler.startCatching()
+
 const CHUNK_SIZE = 26;
 
 /**
@@ -19,6 +23,7 @@ const CHUNK_SIZE = 26;
  * @returns {Promise<boolean>} - Whether the image was uploaded successfully
  */
 export const uploadImage = async (dev: Device, code: CODES, half: HALF, image: Image, w: number, h: number): Promise<boolean> => {
+  log.info(`Initilising image upload to ${half}, w:${w}, h:${h}`)
   let buffer: Uint8Array[] = [];
   // converts the image to an lvgl compatible format
   const convertedImage = await convertImageBlob(image, {

@@ -12,6 +12,11 @@ import { uploadImage } from "./uploadImage";
 import { spotifyAuth, getUserPlayback } from "./modules/spotify";
 import { syncSystemStats } from "./modules/systemStats";
 
+import log from "electron-log/main"
+
+log.initialize()
+log.errorHandler.startCatching()
+
 const userDataPath = app.getPath("userData");
 
 let config: Config;
@@ -49,6 +54,7 @@ const contextMenu = (connected: boolean): Menu =>
   );
 
 app.on("ready", async () => {
+  log.info("App Ready")
   // load config
   config = new Config(userDataPath);
 
@@ -57,7 +63,7 @@ app.on("ready", async () => {
   tray = new Tray(icon);
   tray.setToolTip("Mechboards Max Helper");
   tray.setContextMenu(contextMenu(false));
-  console.log("Tray created");
+  log.info("Tray created");
 
   // Initialize device class and modules
   // device sends self as first arg automatically to all modules
@@ -68,9 +74,11 @@ app.on("ready", async () => {
 
   // update connection status in tray based on device connection events
   device.on("connected", () => {
+    log.info("device connected")
     tray.setContextMenu(contextMenu(true));
   });
   device.on("disconnected", () => {
+    log.info("device disconnected")
     tray.setContextMenu(contextMenu(false));
   });
 });

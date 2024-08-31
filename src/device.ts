@@ -3,6 +3,10 @@ import { usb, WebUSB } from "usb";
 import type { CODES, HALF, ModuleSync } from "./types";
 import { EventEmitter } from "events";
 
+import log from "electron-log/node"
+
+log.errorHandler.startCatching()
+
 const webusb = new WebUSB({
   allowAllDevices: true,
 });

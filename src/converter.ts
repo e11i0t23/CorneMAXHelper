@@ -3,6 +3,10 @@ import { buildPalette, utils, applyPalette, distance, image } from "image-q";
 import { round_half_up, str_pad, dechex, ImageModeUtil } from "./helpers";
 import { ImageMode, OutputMode, ConverterOptions } from "./types";
 
+import log from "electron-log/node"
+
+log.errorHandler.startCatching()
+
 // export interface ConverterOptions {
 //     dith?: boolean;
 //     cf: ImageMode;

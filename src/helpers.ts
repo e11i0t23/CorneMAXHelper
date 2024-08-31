@@ -3,6 +3,10 @@ import path from "path";
 import { safeStorage } from "electron";
 import type { ImageMode, ConfigStore } from "./types";
 
+import log from "electron-log/node"
+
+log.errorHandler.startCatching()
+
 // Converter Helpers
 /**
  * Rounds equivalently to PHP_ROUND_HALF_UP in PHP.
@@ -122,6 +126,7 @@ export class Config {
       const unencrypted = safeStorage.decryptString(filestring);
       this.config = JSON.parse(unencrypted);
     } catch (e) {
+      log.error(`error loading config file ${e}`)
       this.config = { accessToken: null, refreshToken: null };
     }
   };
@@ -138,5 +143,6 @@ export class Config {
     // if encryption is available, encrypt the config string before writing it to the file
     if (safeStorage.isEncryptionAvailable()) configString = safeStorage.encryptString(configString);
     writeFileSync(path.join(this.userData, "config.json"), configString);
+    log.info("Written config to file")
   };
 }
