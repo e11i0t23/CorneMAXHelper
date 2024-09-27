@@ -6,9 +6,9 @@ import { loadImage } from "@napi-rs/canvas";
 import { BrowserWindow } from "electron";
 import { Device } from "../device";
 
-import log from "electron-log/node"
+import log from "electron-log/node";
 
-log.errorHandler.startCatching()
+log.errorHandler.startCatching();
 
 let codeVerifier: string;
 let nowPlaying: number | undefined;
@@ -30,7 +30,7 @@ const redirectUri = "http://localhost.com:3961/spotify-callback";
 export const spotifyAuth = async (c: Config) => {
   // ensure only one auth window is open
   if (inauth) return;
-  log.info("Authenticating Spotify")
+  log.info("Authenticating Spotify");
   inauth = true;
 
   // Generate a code verifier and challenge
@@ -59,7 +59,7 @@ export const spotifyAuth = async (c: Config) => {
   // Handle the callback by wathcing for the redirect uri
   win.webContents.on("will-navigate", (event, url) => {
     if (!url.startsWith(redirectUri)) return;
-    log.info("Spotify Redirict URL Captured")
+    log.info("Spotify Redirict URL Captured");
     const urlParams = new URLSearchParams(url.replace(redirectUri + "?", ""));
     let code = urlParams.get("code");
     handleSpotifyCallback(code!, c);
@@ -140,11 +140,12 @@ const handleSpotifyCallback = async (code: string, c: Config) => {
  *
  * @async
  * @param {Device} d - The device to write to
+ * @param {HALF} half - The half of the keyboard to write to
  * @param {Config} c - The configuration object
  * @returns {*}
  */
-export const getUserPlayback = async (d: Device, c: Config) => {
-  log.info("Get Playback Called")
+export const getUserPlayback = async (d: Device, half: HALF, c: Config) => {
+  log.info("Get Playback Called");
   // If in the process of authenticating, return
   if (inauth) return false;
   let buffer: Uint8Array[] = [];
@@ -157,20 +158,20 @@ export const getUserPlayback = async (d: Device, c: Config) => {
   };
 
   const body = await fetch("https://api.spotify.com/v1/me/player", payload);
-  log.info(`Spotify Status ${body.status}`)
+  log.info(`Spotify Status ${body.status}`);
   if (body.status == 204) {
-    log.info(`Spotify Inactive`)
+    log.info(`Spotify Inactive`);
     nowPlaying = undefined;
-    return true
+    return true;
   }
   const response = await body.json();
 
   // Handle errors
   if (response.error) {
-    log.info(`Spotify Error ${response.error.staus}`)
+    log.info(`Spotify Error ${response.error.staus}`);
     // 401 is an expired token
     if (response.error.status == 401) {
-      return refreshSpotifyToken(getUserPlayback, c, [d, c]);
+      return refreshSpotifyToken(getUserPlayback, c, [d, half, c]);
     }
     return false;
   }
@@ -180,19 +181,19 @@ export const getUserPlayback = async (d: Device, c: Config) => {
   // Calculate the progress of the current item
   let progress = Math.round((response.progress_ms / response.item.duration_ms) * 100);
   if (Math.abs(progress - lastProgress) > 1) {
-    d.write(CODES.PROGRESS, HALF.SLAVE, [progress]);
+    d.write(CODES.PROGRESS, half, [progress]);
     lastProgress = progress;
-    log.info(`Spotify progress updated ${progress}`)
+    log.info(`Spotify progress updated ${progress}`);
   }
   // If the item playing is not the same as the last one uploaded, upload the new item
   if (response.item.id != nowPlaying) {
-    log.info(`Spotify now playing ${response.item.name}`)
+    log.info(`Spotify now playing ${response.item.name}`);
     nowPlaying = response.item.id;
     // Upload Album Art
     const image = await loadImage(response.item.album.images[2].url);
-    uploadImage(d, CODES.IMAGE, HALF.SLAVE, image, 64, 64);
+    uploadImage(d, CODES.IMAGE, half, image, 64, 64);
     // Upload Name
-    d.write(CODES.NOW_PLAYING, 0x01, string2bytes(response.item.name));
+    d.write(CODES.NOW_PLAYING, half, string2bytes(response.item.name));
   }
   return true;
 };
@@ -207,7 +208,7 @@ export const getUserPlayback = async (d: Device, c: Config) => {
  * @returns {unknown} - The result of the function
  */
 const refreshSpotifyToken = async (func: any, c: Config, args?: any[]) => {
-  log.info("refresh token called")
+  log.info("refresh token called");
   inauth = true;
   const url = "https://accounts.spotify.com/api/token";
 
@@ -225,7 +226,7 @@ const refreshSpotifyToken = async (func: any, c: Config, args?: any[]) => {
 
   const body = await fetch(url, payload);
   const response = await body.json();
-  if (response) log.info("Response from refresh")
+  if (response) log.info("Response from refresh");
   if (body.status == 200) {
     c.updateConfig({ ...c.config, accessToken: response.access_token, refreshToken: response.refresh_token });
     inauth = false;
@@ -234,7 +235,7 @@ const refreshSpotifyToken = async (func: any, c: Config, args?: any[]) => {
   } else {
     console.log(response);
     // we set inauth to false here because it will be set to true again in spotifyAuth, but would prevent spotifyAuth rrunning if left true
-    inauth = false
+    inauth = false;
     spotifyAuth(c);
   }
 };

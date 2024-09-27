@@ -1,11 +1,13 @@
 import HID, { HIDAsync } from "node-hid";
 import { usb, WebUSB } from "usb";
-import type { CODES, HALF, ModuleSync } from "./types";
+import { HALF, CODES, Half } from "./types";
 import { EventEmitter } from "events";
 
-import log from "electron-log/node"
+import log from "electron-log/node";
+import { Config } from "./helpers";
+import { screens } from "./screens";
 
-log.errorHandler.startCatching()
+log.errorHandler.startCatching();
 
 const webusb = new WebUSB({
   allowAllDevices: true,
@@ -21,23 +23,31 @@ const webusb = new WebUSB({
  */
 export class Device extends EventEmitter {
   device: HIDAsync | null;
-  intervalIDs: any[] = [];
-  modules: ModuleSync[] = [];
+  config: Config;
+  master: Half = {
+    screen: 0,
+    intervalIDs: [],
+  };
+
+  slave: Half = {
+    screen: 3,
+    intervalIDs: [],
+  };
 
   /**
    * @constructor
    * @param {ModuleSync[]} modules - The modules to sync to the device
    */
-  constructor(modules: ModuleSync[]) {
+  constructor(config: Config) {
     super();
-    this.modules = modules;
+    this.config = config;
     this.connectToDevice();
 
     // Initialise USB event listeners to detect when the keyboard is connected
     usb.on("attach", async (attached) => {
       if (this.device) return;
       if (!(attached.deviceDescriptor.idVendor == Number(0x4653) && attached.deviceDescriptor.idProduct == Number(0x0001))) return;
-      console.log("Keyboard attached, connecting to device");
+      log.info("Keyboard attached, connecting to device");
       this.connectToDevice();
     });
 
@@ -45,9 +55,9 @@ export class Device extends EventEmitter {
     usb.on("detach", (device) => {
       if (device.deviceDescriptor.idVendor == Number(0x4653) && device.deviceDescriptor.idProduct == Number(0x0001)) {
         this.device = null;
-        console.log("Device Discconected");
+        log.info("Device Discconected");
         this.emit("disconnected");
-        this.intervalIDs.forEach((id) => {
+        [...this.slave.intervalIDs, ...this.master.intervalIDs].forEach((id) => {
           clearInterval(id);
         });
       }
@@ -72,17 +82,29 @@ export class Device extends EventEmitter {
       // Open the HID device
       this.device = await HID.HIDAsync.open(device.path);
       if (!this.device) return false;
-      console.log("Connected to device");
+      log.info("Connected to device");
       this.emit("connected");
       // load the modules to be sysnced
-      this.modules.forEach((m) => {
-        this.intervalIDs.push(setInterval(m.f, m.freq, this, ...m.args));
-      });
+      this.updateScreen(this.master.screen, HALF.MASTER);
+      this.updateScreen(this.slave.screen, HALF.SLAVE);
+
       return true;
     } catch (error) {
       console.error(error);
       return false;
     }
+  };
+
+  updateScreen = (screen: number, half: HALF) => {
+    log.info(`Updating Screen ${screen} on ${half == HALF.MASTER ? "Master" : "Slave"}`);
+    (half == HALF.MASTER ? this.master.intervalIDs : this.slave.intervalIDs).forEach((id) => {
+      clearInterval(id);
+    });
+    (half == HALF.MASTER ? this.master : this.slave).screen = screen;
+    this.write(CODES.SCREEN, half, [screens[screen].code]);
+    screens[screen].modules.forEach((m) => {
+      (half == HALF.MASTER ? this.master.intervalIDs : this.slave.intervalIDs).push(setInterval(m, screens[screen].frequency, this, half, this.config));
+    });
   };
 
   /**

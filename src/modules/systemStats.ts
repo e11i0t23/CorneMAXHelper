@@ -1,6 +1,6 @@
 import type { Device } from "../device";
 import { CODES, HALF } from "../types";
-import { string2bytes } from "../helpers";
+import { string2bytes, Config } from "../helpers";
 
 import si from "systeminformation";
 import dayjs from "dayjs";
@@ -19,7 +19,7 @@ const diffVal = 3;
  * @param {Device} d - The device to sync the stats to
  * @param {HALF} half - The half of the keyboard to sync the stats to
  */
-export const syncSystemStats = async (d: Device, half: HALF) => {
+export const syncSystemStats = async (d: Device, half: HALF, config: Config) => {
   // mem
   let mem = await si.mem();
   let memUsage = Math.round((mem.active / (mem.used + mem.free)) * 100);
@@ -42,10 +42,22 @@ export const syncSystemStats = async (d: Device, half: HALF) => {
     lastGPU = gpuUsage;
   }
   // time
+  // let date = new Date(); // time now
+  // let time = dayjs(date).format("hh:mm");
+  // if (time !== lastTime) {
+  //   d.write(CODES.TIME, HALF.SLAVE, string2bytes(time));
+  //   lastTime = time;
+  // }
+};
+
+export const syncLargeSystemTime = async (d: Device, half: HALF, config: Config) => syncSystemTime(d, half, config, true);
+
+export const syncSystemTime = async (d: Device, half: HALF, config: Config, l?: Boolean) => {
   let date = new Date(); // time now
   let time = dayjs(date).format("hh:mm");
+  if (l == true) time = time.replace(":", "\n");
   if (time !== lastTime) {
-    d.write(CODES.TIME, HALF.SLAVE, string2bytes(time));
+    d.write(CODES.TIME, half, string2bytes(time));
     lastTime = time;
   }
 };

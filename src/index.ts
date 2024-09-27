@@ -9,13 +9,14 @@ import { CODES, HALF } from "./types";
 
 import { uploadImage } from "./uploadImage";
 
-import { spotifyAuth, getUserPlayback } from "./modules/spotify";
-import { syncSystemStats } from "./modules/systemStats";
+import { spotifyAuth } from "./modules/spotify";
 
-import log from "electron-log/main"
+import { screens } from "./screens";
 
-log.initialize()
-log.errorHandler.startCatching()
+import log from "electron-log/main";
+
+log.initialize();
+log.errorHandler.startCatching();
 
 const userDataPath = app.getPath("userData");
 
@@ -49,12 +50,38 @@ const contextMenu = (connected: boolean): Menu =>
           { label: "Upload Master", click: () => uploadCustomImage(HALF.MASTER) },
           { label: "Upload Slave", click: () => uploadCustomImage(HALF.SLAVE) },
           { label: "Quit", click: app.quit },
+          {
+            label: "Master",
+
+            submenu: [
+              ...screens.map((screen) => ({
+                label: screen.name,
+                type: "radio" as const,
+                checked: screen.code === screen_master,
+                click: () => device.updateScreen(screen.code, HALF.MASTER),
+              })),
+            ],
+          },
+          {
+            label: "Slave",
+            submenu: [
+              ...screens.map((screen) => ({
+                label: screen.name,
+                type: "radio" as const,
+                checked: screen.code === screen_slave,
+                click: () => device.updateScreen(screen.code, HALF.SLAVE),
+              })),
+            ],
+          },
         ]
       : [{ label: "Disconnected" }, { label: "Quit", click: app.quit }]
   );
 
+let screen_master: number = 0;
+let screen_slave: number = 3;
+
 app.on("ready", async () => {
-  log.info("App Ready")
+  log.info("App Ready");
   // load config
   config = new Config(userDataPath);
 
@@ -67,18 +94,15 @@ app.on("ready", async () => {
 
   // Initialize device class and modules
   // device sends self as first arg automatically to all modules
-  device = new Device([
-    { f: getUserPlayback, freq: 2000, args: [config] },
-    { f: syncSystemStats, freq: 2000, args: [HALF.MASTER] },
-  ]);
+  device = new Device(config);
 
   // update connection status in tray based on device connection events
   device.on("connected", () => {
-    log.info("device connected")
+    log.info("device connected");
     tray.setContextMenu(contextMenu(true));
   });
   device.on("disconnected", () => {
-    log.info("device disconnected")
+    log.info("device disconnected");
     tray.setContextMenu(contextMenu(false));
   });
 });

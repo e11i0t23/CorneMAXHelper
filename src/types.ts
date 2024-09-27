@@ -12,14 +12,15 @@ export interface ConverterOptions {
 }
 
 export enum CODES {
-  TIME = 0x00,
-  CPU = 0x01,
-  GPU = 0x02,
-  RAM = 0x03,
-  PROGRESS = 0x04,
-  NOW_PLAYING = 0x05,
-  IMAGE = 0x06,
-  IMG_FULLSIZE = 0x07,
+  SCREEN = 0x00,
+  TIME = 0x01,
+  CPU = 0x02,
+  GPU = 0x03,
+  RAM = 0x04,
+  PROGRESS = 0x05,
+  NOW_PLAYING = 0x06,
+  IMAGE = 0x07,
+  IMG_FULLSIZE = 0x08,
 }
 
 export enum HALF {
@@ -66,4 +67,17 @@ export type ModuleSync = {
   f: Function;
   args: any[];
   freq: number;
+};
+
+export type ScreenSync = {
+  id: number;
+  name: string;
+  code: 0x00 | 0x01 | 0x02 | 0x03;
+  modules: Function[];
+  frequency: number;
+};
+
+export type Half = {
+  screen: number;
+  intervalIDs: any[];
 };
