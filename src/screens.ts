@@ -15,7 +15,7 @@ export const screens: ScreenSync[] = [
     name: "Stats",
     code: 0x01,
     modules: [syncSystemStats],
-    frequency: 2000,
+    frequency: 5000,
   },
   {
     id: 2,

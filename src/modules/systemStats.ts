@@ -12,6 +12,8 @@ let lastTime: string = "00:00";
 
 const diffVal = 3;
 
+if (process.platform == 'win32') si.powerShellStart()
+
 /**
  * Sync system stats to the keyboard
  *
@@ -20,33 +22,33 @@ const diffVal = 3;
  * @param {HALF} half - The half of the keyboard to sync the stats to
  */
 export const syncSystemStats = async (d: Device, half: HALF, config: Config) => {
+
+  const valueConfig = {
+    currentLoad: 'currentLoad',
+    // graphics: 'controllers',
+    mem: 'active, used, free'
+  } 
+
+  let data = await si.get(valueConfig)
+
   // mem
-  let mem = await si.mem();
-  let memUsage = Math.round((mem.active / (mem.used + mem.free)) * 100);
+  let memUsage = Math.round((data.mem.active / (data.mem.used + data.mem.free)) * 100);
+  console.log(memUsage)
   if (Math.abs(memUsage - lastMem) > diffVal) {
-    d.write(CODES.RAM, half, [memUsage]);
-    lastMem = memUsage;
+      d.write(CODES.RAM, half, [memUsage]);
+      lastMem = memUsage;
   }
   // cpu
-  let cpu = await si.currentLoad();
-  let cpuUsage = Math.round(cpu.currentLoad);
+  let cpuUsage = Math.round(data.currentLoad.currentLoad);
   if (Math.abs(cpuUsage - lastCPU) > diffVal) {
     d.write(CODES.CPU, half, [cpuUsage]);
     lastCPU = cpuUsage;
   }
-  // // gpu
-  let gpu = await si.graphics();
-  let gpuUsage = Math.round(gpu.controllers[0].utilizationGpu || 0);
-  if (Math.abs(gpuUsage - lastGPU) > diffVal) {
-    d.write(CODES.GPU, half, [gpuUsage]);
-    lastGPU = gpuUsage;
-  }
-  // time
-  // let date = new Date(); // time now
-  // let time = dayjs(date).format("hh:mm");
-  // if (time !== lastTime) {
-  //   d.write(CODES.TIME, HALF.SLAVE, string2bytes(time));
-  //   lastTime = time;
+  // gpu -> this only works on NVIDIA
+  // let gpuUsage = Math.round(data.graphics.controllers[0].utilizationGpu || 0);
+  // if (Math.abs(gpuUsage - lastGPU) > diffVal) {
+  //   d.write(CODES.GPU, half, [gpuUsage]);
+  //   lastGPU = gpuUsage;
   // }
 };
 
