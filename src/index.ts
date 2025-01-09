@@ -1,4 +1,4 @@
-import { app, Tray, Menu, nativeImage, dialog } from "electron";
+import { app, Tray, Menu, nativeImage, dialog, Notification } from "electron";
 import { loadImage } from "@napi-rs/canvas";
 import path from "path";
 
@@ -81,6 +81,7 @@ let screen_master: number = 0;
 let screen_slave: number = 3;
 
 app.on("ready", async () => {
+  new Notification({'title':'Corne Max Helper Started'}).show()
   log.info("App Ready");
   // load config
   config = new Config(userDataPath);
