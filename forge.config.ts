@@ -18,7 +18,7 @@ module.exports = {
     {
       name: "@electron-forge/maker-squirrel",
       config: {
-        iconUrl: "https://raw.githubusercontent.com/e11i0t23/displayDriveTray/main/images/icon.ico",
+        iconUrl: "https://raw.githubusercontent.com/e11i0t23/CorneMAXHelper/main/images/icon.ico",
         // The ICO file to use as the icon for the generated Setup.exe
         setupIcon: path.join(__dirname, "images", "icon.ico"),
       },
@@ -50,7 +50,7 @@ module.exports = {
       config: {
         repository: {
           owner: 'e11i0t23',
-          name: 'displayDriveTray',
+          name: 'CorneMAXHelper',
         },
         draft: true,
         prerelease: false,

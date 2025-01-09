@@ -1,7 +1,7 @@
 {
-  "name": "displaydrivetray",
+  "name": "cornemaxhelper",
   "version": "1.0.0",
-  "description": "CRKBD Helper",
+  "description": "Corne MAX Helper",
   "main": ".webpack/main",
   "author": "Mechboards",
   "icon": "./images/icon.png",

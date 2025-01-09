@@ -1,4 +1,4 @@
-# Mechboards Max Display Drive
+# Corne Max Helper
 
 A tray application built on electron for sending data to the displays on the Mechboards CRKBD Max
 

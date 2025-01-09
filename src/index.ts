@@ -89,7 +89,7 @@ app.on("ready", async () => {
   // initialize tray
   const icon = nativeImage.createFromPath(path.join(__dirname, "./images/logoTemplate.png"));
   tray = new Tray(icon);
-  tray.setToolTip("Mechboards Max Helper");
+  tray.setToolTip("Corne Max Helper");
   tray.setContextMenu(contextMenu(false));
   log.info("Tray created");
 
