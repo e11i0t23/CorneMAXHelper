@@ -9,7 +9,7 @@ import { CODES, HALF } from "./types";
 
 import { uploadImage } from "./uploadImage";
 
-import { spotifyAuth } from "./modules/spotify";
+import { spotifyAuth, spotifyDeAuth } from "./modules/spotify";
 
 import { screens } from "./screens";
 
@@ -41,50 +41,61 @@ if (!app.requestSingleInstanceLock()) {
  * @param {boolean} connected - Whether the device is connected
  * @returns {Menu} - The context menu for the tray
  */
-const contextMenu = (connected: boolean): Menu =>
+const contextMenu = (connected: boolean, f?: boolean): Menu =>
   Menu.buildFromTemplate(
-    connected
-      ? [
-          { label: "Connected" },
-          // { label: 'Link Spotify', click: connectSpotify },
-          { label: "Upload Master", click: () => uploadCustomImage(HALF.MASTER) },
-          { label: "Upload Slave", click: () => uploadCustomImage(HALF.SLAVE) },
+    [
+          { label: connected ? "Connected" : "Disconnected"},
+          (
+            (config.config== undefined ? false : config.config['accessToken']) || f ? { label: 'Unlink Spotify', click: disconnectSpotify } : { label: 'Link Spotify', click: connectSpotify }
+          ),
+          ...(
+            connected ? [
+            { label: "Upload Master", click: () => uploadCustomImage(HALF.MASTER) }, 
+            { label: "Upload Slave", click: () => uploadCustomImage(HALF.SLAVE) },
+            {
+              label: "Master",
+              
+              submenu: [
+                ...screens.map((screen) => ({
+                  label: screen.name,
+                  type: "radio" as const,
+                  checked: screen.code === device.master.screen,
+                  click: () => device.updateScreen(screen.code, HALF.MASTER),
+                })),
+              ],
+            },
+            {
+              label: "Slave",
+              submenu: [
+                ...screens.map((screen) => ({
+                  label: screen.name,
+                  type: "radio" as const,
+                  checked: screen.code === device.slave.screen,
+                  click: () => device.updateScreen(screen.code, HALF.SLAVE),
+                })),
+              ],
+            },
+             ] : []
+          ),
           { label: "Quit", click: app.quit },
-          {
-            label: "Master",
-
-            submenu: [
-              ...screens.map((screen) => ({
-                label: screen.name,
-                type: "radio" as const,
-                checked: screen.code === screen_master,
-                click: () => device.updateScreen(screen.code, HALF.MASTER),
-              })),
-            ],
-          },
-          {
-            label: "Slave",
-            submenu: [
-              ...screens.map((screen) => ({
-                label: screen.name,
-                type: "radio" as const,
-                checked: screen.code === screen_slave,
-                click: () => device.updateScreen(screen.code, HALF.SLAVE),
-              })),
-            ],
-          },
         ]
-      : [{ label: "Disconnected" }, { label: "Quit", click: app.quit }]
+
   );
 
 let screen_master: number = 0;
-let screen_slave: number = 3;
+let screen_slave: number = 0;
+
 
 app.on("ready", async () => {
-  new Notification({'title':'Corne Max Helper Started'}).show()
-  log.info("App Ready");
   // load config
   config = new Config(userDataPath);
+  // Set Notification
+  new Notification({'title':'Corne Max Helper Started'}).show()
+  log.info("App Ready");
+  
+  // Initialize device class and modules
+  // device sends self as first arg automatically to all modules
+  device = new Device(config);
 
   // initialize tray
   const icon = nativeImage.createFromPath(path.join(__dirname, "./images/logoTemplate.png"));
@@ -93,9 +104,6 @@ app.on("ready", async () => {
   tray.setContextMenu(contextMenu(false));
   log.info("Tray created");
 
-  // Initialize device class and modules
-  // device sends self as first arg automatically to all modules
-  device = new Device(config);
 
   // update connection status in tray based on device connection events
   device.on("connected", () => {
@@ -112,6 +120,14 @@ app.on("ready", async () => {
 const connectSpotify = () => {
   console.log("Connecting to Spotify");
   spotifyAuth(config);
+  tray.setContextMenu(contextMenu(device.device != null, true))
+};
+
+// Delete Spotify connection
+const disconnectSpotify = () => {
+  console.log("Disconnecting to Spotify");
+  spotifyDeAuth(config);
+  tray.setContextMenu(contextMenu(device.device != null))
 };
 
 /**

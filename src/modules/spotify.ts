@@ -68,6 +68,10 @@ export const spotifyAuth = async (c: Config) => {
   });
 };
 
+export const spotifyDeAuth = (c: Config) => {
+  c.updateConfig({...c.config, accessToken: null, refreshToken: null})
+}
+
 /**
  * Generate a random string
  *

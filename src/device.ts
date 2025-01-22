@@ -30,7 +30,7 @@ export class Device extends EventEmitter {
   };
 
   slave: Half = {
-    screen: 3,
+    screen: 0,
     intervalIDs: [],
   };
 
