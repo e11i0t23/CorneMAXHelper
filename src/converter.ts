@@ -490,10 +490,17 @@ export async function convertImageBlob(img: Image, options: ConverterOptions) {
   const outputFormat = options.outputFormat;
   let c_creator;
   if (isImage(img, options)) {
-    const canvas = createCanvas(img.width, img.height);
+    const canvas = createCanvas(options.overrideWidth, options.overrideHeight);
     const ctx = canvas.getContext("2d");
-    ctx.drawImage(img, 0, 0);
-    const imageData = ctx.getImageData(0, 0, img.width, img.height).data;
+    const scale = Math.min(options.overrideWidth/img.width, options.overrideHeight/img.height)
+    // Calculate the new width and height for the image
+    const scaledWidth = img.width * scale;
+    const scaledHeight = img.height * scale;
+    // Calculate the offset to center the image in the canvas
+    const offsetX = (options.overrideWidth - scaledWidth) / 2;
+    const offsetY = (options.overrideHeight - scaledHeight) / 2;
+    ctx.drawImage(img, offsetX, offsetY, scaledWidth, scaledHeight);
+    const imageData = ctx.getImageData(0, 0, options.overrideWidth, options.overrideHeight).data;
 
     const alpha =
       options.cf == ImageMode.CF_TRUE_COLOR_ALPHA ||
@@ -502,7 +509,7 @@ export async function convertImageBlob(img: Image, options: ConverterOptions) {
       options.cf == ImageMode.CF_ALPHA_4_BIT ||
       options.cf == ImageMode.CF_ALPHA_8_BIT ||
       options.cf == ImageMode.CF_RGB565A8;
-    c_creator = new Converter(img.width, img.height, imageData, alpha, options);
+    c_creator = new Converter(options.overrideWidth, options.overrideHeight, imageData, alpha, options);
 
     if (options.outputFormat == OutputMode.C) {
       if (options.cf == ImageMode.CF_TRUE_COLOR || options.cf == ImageMode.CF_TRUE_COLOR_ALPHA || options.cf == ImageMode.CF_TRUE_COLOR_CHROMA) {
@@ -512,12 +519,12 @@ export async function convertImageBlob(img: Image, options: ConverterOptions) {
             ImageMode.ICF_TRUE_COLOR_ARGB8565,
             ImageMode.ICF_TRUE_COLOR_ARGB8565_RBSWAP,
             ImageMode.ICF_TRUE_COLOR_ARGB8888,
-          ].map((cf) => new Converter(img.width, img.height, imageData, alpha, Object.assign({}, options, { cf })).convert())
+          ].map((cf) => new Converter(options.overrideWidth, options.overrideHeight, imageData, alpha, Object.assign({}, options, { cf })).convert())
         );
         c_res_array = arrayList.join("");
       } else c_res_array = await c_creator.convert();
     } else {
-      const binaryConv = new Converter(img.width, img.height, imageData, alpha, options);
+      const binaryConv = new Converter(options.overrideWidth, options.overrideHeight, imageData, alpha, options);
       bin_res_blob = await binaryConv.convert();
     }
   } else {
