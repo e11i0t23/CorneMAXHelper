@@ -33,7 +33,7 @@ export const syncSystemStats = async (d: Device, half: HALF, config: Config) => 
 
   // mem
   let memUsage = Math.round((data.mem.active / (data.mem.used + data.mem.free)) * 100);
-  console.log(memUsage)
+  // console.log(memUsage)
   if (Math.abs(memUsage - lastMem) > diffVal) {
       d.write(CODES.RAM, half, [memUsage]);
       lastMem = memUsage;

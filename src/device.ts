@@ -90,7 +90,7 @@ export class Device extends EventEmitter {
 
       return true;
     } catch (error) {
-      console.error(error);
+      console.error("Device Error: ", error);
       return false;
     }
   };
