@@ -45,6 +45,7 @@
     "dayjs": "^1.11.11",
     "electron-log": "^5.1.7",
     "electron-squirrel-startup": "^1.0.1",
+    "gifwrap": "^0.10.1",
     "image-q": "^4.0.0",
     "logger": "^0.0.1",
     "node-hid": "^3.1.0",

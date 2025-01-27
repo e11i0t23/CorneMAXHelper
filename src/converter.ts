@@ -83,20 +83,21 @@ export class Converter {
   }
 
   async convert() {
-    if (this.cf == ImageMode.CF_RAW || this.cf == ImageMode.CF_RAW_ALPHA) {
-      const d_array = Array.from(this.imageData);
+    if(this.cf == ImageMode.CF_RAW || this.cf == ImageMode.CF_RAW_ALPHA) {
+      const d_array = Array.from((this.imageData as Uint8Array));
       this.raw_len = d_array.length;
-      const indent = this.options.useLegacyFooterOrder ? "  " : "    ";
+      const indent = this.options.useLegacyFooterOrder ? "  ": "    ";
       const numValuesPerRow = this.options.useLegacyFooterOrder ? 15 : 12;
-      let str =
-        "\n" +
-        indent +
-        d_array
-          .map((val, i) => "0x" + str_pad(dechex(val as number), 2, "0", true) + (i % (numValuesPerRow + 1) == numValuesPerRow ? ", \n" + indent : ", "))
-          .join("");
-      str = str.substr(0, str.length - 2);
-      return str;
-    }
+      let str = "\n" + indent + d_array.map((val, i) => "0x" + str_pad(dechex(val), 2, '0', true) + ((i % (numValuesPerRow+1)) == numValuesPerRow ? (", \n" + indent) : ", ")).join("");
+      str = str.substr(0, str.length-2);
+      if (this.outputFormat== OutputMode.C) return str;
+      const sanitizedString = str.replace(/[\s\n]+/g, '').replace(/,$/, '');
+      const hexValues = sanitizedString.match(/0x[0-9a-fA-F]{2}/g);
+      if (!hexValues) return str
+      const byteArray = hexValues.map(hex => parseInt(hex, 16));
+      if (!byteArray) return str
+      return new Uint8Array(byteArray)
+  }
     var palette_size = 0,
       bits_per_value = 0;
     this.d_out = [];
@@ -480,16 +481,17 @@ function isNotRaw(options: ConverterOptions) {
   return options.cf != ImageMode.CF_RAW && options.cf != ImageMode.CF_RAW_ALPHA; /* && options.cf != ImageMode.CF_RAW_CHROMA; */
 }
 
-export async function convertImageBlob(img: Image, options: ConverterOptions) {
-  function isImage(img: Image, options: ConverterOptions) {
+export async function convertImageBlob(img: Image|Uint8Array, options: ConverterOptions) {
+  function isImage(img: Image|Uint8Array, options: ConverterOptions) {
     return isNotRaw(options);
   }
   let c_res_array;
   let bin_res_blob;
   const out_name = options.outName;
   const outputFormat = options.outputFormat;
-  let c_creator;
+  let c_creator: Converter;
   if (isImage(img, options)) {
+    img = img as Image
     const canvas = createCanvas(options.overrideWidth, options.overrideHeight);
     const ctx = canvas.getContext("2d");
     const scale = Math.min(options.overrideWidth/img.width, options.overrideHeight/img.height)
@@ -530,9 +532,9 @@ export async function convertImageBlob(img: Image, options: ConverterOptions) {
   } else {
     c_creator = new Converter(options.overrideWidth ?? 0, options.overrideHeight ?? 0, img, options.cf == ImageMode.CF_RAW_ALPHA, options);
     if (options.outputFormat == OutputMode.C) c_res_array = await c_creator.convert();
-    else bin_res_blob = await c_creator.convert();
+    else bin_res_blob = await c_creator.convert() as ArrayBuffer;
   }
 
-  if (outputFormat == OutputMode.BIN) return bin_res_blob;
+  if (outputFormat == OutputMode.BIN) return bin_res_blob as ArrayBuffer;
   else return c_res_array;
 }

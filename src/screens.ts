@@ -31,4 +31,11 @@ export const screens: ScreenSync[] = [
     modules: [getUserPlayback, syncSystemTime],
     frequency: 2000,
   },
+  {
+    id: 4,
+    name: "Gif",
+    code: 0x04,
+    modules: [],
+    frequency: 2000,
+  },
 ];

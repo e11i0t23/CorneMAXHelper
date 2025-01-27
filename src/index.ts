@@ -1,13 +1,13 @@
-import { app, Tray, Menu, nativeImage, dialog, Notification } from "electron";
-import { loadImage } from "@napi-rs/canvas";
+import { app, Tray, Menu, nativeImage, Notification } from "electron";
+
 import path from "path";
 
 import { Config } from "./helpers";
 import { Device } from "./device";
 
-import { CODES, HALF } from "./types";
+import { HALF } from "./types";
 
-import { uploadImage } from "./uploadImage";
+import { uploadCustomImage, uploadCustomGifImage } from "./uploadImage";
 
 import { spotifyAuth, spotifyDeAuth } from "./modules/spotify";
 
@@ -50,8 +50,10 @@ const contextMenu = (connected: boolean, f?: boolean): Menu =>
           ),
           ...(
             connected ? [
-            { label: "Upload Master", click: () => uploadCustomImage(HALF.MASTER) }, 
-            { label: "Upload Slave", click: () => uploadCustomImage(HALF.SLAVE) },
+            { label: "Upload Master", click: () => uploadCustomImage(device, HALF.MASTER, ) }, 
+            { label: "Upload Slave", click: () => uploadCustomImage(device, HALF.SLAVE) },
+            { label: "Upload Gif Master", click: () => uploadCustomGifImage(device, HALF.MASTER) }, 
+            { label: "Upload Gif Slave", click: () => uploadCustomGifImage(device, HALF.SLAVE) },
             {
               label: "Master",
               
@@ -128,19 +130,4 @@ const disconnectSpotify = () => {
   console.log("Disconnecting to Spotify");
   spotifyDeAuth(config);
   tray.setContextMenu(contextMenu(device.device != null))
-};
-
-/**
- * Upload a custom image from system to device that will fill the entire area (w: 80, h: 160)
- *
- * @async
- * @param {number} half - The half of the keyboard to upload the image to
- * @returns {Promise<boolean>} - Whether the image was uploaded successfully
- */
-const uploadCustomImage = async (half: number): Promise<boolean> => {
-  const OF = await dialog.showOpenDialog({ properties: ["openFile"], filters: [{ name: "Images", extensions: ["png", "jpg", "jpeg"] }] });
-  if (OF.canceled) return false;
-  if (OF.filePaths.length == 0) return false;
-  const image = await loadImage(OF.filePaths[0]);
-  return await uploadImage(device, CODES.IMG_FULLSIZE, half, image, 80, 160);
 };
