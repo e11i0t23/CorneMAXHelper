@@ -76,8 +76,8 @@ export const uploadImage = async (dev: Device, code: CODES, half: HALF, image: I
 };
 
 export const uploadCustomGifImage = async (dev: Device, half: number): Promise<boolean> => {
-  const W = 64
-  const H = 64
+  const W = 80
+  const H = 100
   const OF = await dialog.showOpenDialog({ properties: ["openFile"], filters: [{ name: "Gif", extensions: ["gif"] }] });
   if (OF.canceled) return false;
   if (OF.filePaths.length == 0) return false;
@@ -135,9 +135,9 @@ export const uploadCustomGifImage = async (dev: Device, half: number): Promise<b
     flatFrames.push(flattenedFrame);
   }
 
-  // Calculate the step to pick frames so that we only keep 30 max
+  // Calculate the step to pick frames so that we only keep 20 max
   const totalFrames = gif.frames.length;
-  const maxFrames = 25;
+  const maxFrames = 20;
   const frameStep = Math.ceil(totalFrames / maxFrames);
   // Select frames to keep and adjust delays
   const selectedFrames = [];
