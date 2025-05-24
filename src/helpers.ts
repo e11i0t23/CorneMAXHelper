@@ -106,30 +106,36 @@ export class Config {
    */
   constructor(userData: string) {
     this.userData = userData;
-    this.loadConfigFile();
   }
 
-  /**
+  static async init(userData: string): Promise<Config> {
+    const instance = new Config(userData);
+    await instance.loadConfigFile();
+    return instance;
+  }
+
+    /**
    * Load the config file from the user data directory
    *
    * @returns {Promise<void>}
    */
-  loadConfigFile = async () => {
+  private async loadConfigFile(): Promise<void> {
     try {
-      // Load the config file
-      const filestring = await readFileSync(path.join(this.userData, "config.json"));
-      // If the file is empty, set the config to null
-      if (!filestring) this.config = { accessToken: null, refreshToken: null };
-      // If encryption is not available, parse the config file
-      if (!safeStorage.isEncryptionAvailable()) this.config = JSON.parse(filestring.toString());
-      // If encryption is available, decrypt the file and parse the config
-      const unencrypted = safeStorage.decryptString(filestring);
-      this.config = JSON.parse(unencrypted);
+      const filestring = readFileSync(path.join(this.userData, "config.json"));
+      if (!filestring) {
+        this.config = { accessToken: null, refreshToken: null, masterScreen: 0, slaveScreen: 1 };
+      } else if (!safeStorage.isEncryptionAvailable()) {
+        this.config = JSON.parse(filestring.toString());
+      } else {
+        const unencrypted = safeStorage.decryptString(filestring);
+        this.config = JSON.parse(unencrypted);
+      }
+      console.log(this.config);
     } catch (e) {
-      log.error(`error loading config file ${e}`)
-      this.config = { accessToken: null, refreshToken: null };
+      log.error(`error loading config file ${e}`);
+      this.config = { accessToken: null, refreshToken: null, masterScreen: 0, slaveScreen: 1 };
     }
-  };
+  }
 
   /**
    * Update the config file with the new config
@@ -145,4 +151,8 @@ export class Config {
     writeFileSync(path.join(this.userData, "config.json"), configString);
     log.info("Written config to file")
   };
+
+  updateField<K extends keyof ConfigStore>(key: K, value: ConfigStore[K]): Promise<void> {
+    return this.updateConfig({ ...this.config, [key]: value });
+  }
 }

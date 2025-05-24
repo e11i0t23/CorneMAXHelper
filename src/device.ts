@@ -41,6 +41,9 @@ export class Device extends EventEmitter {
   constructor(config: Config) {
     super();
     this.config = config;
+    console.log(this.config.config)
+    this.master.screen = this.config.config.masterScreen
+    this.slave.screen = this.config.config.slaveScreen
     this.connectToDevice();
 
     // Initialise USB event listeners to detect when the keyboard is connected
@@ -105,6 +108,7 @@ export class Device extends EventEmitter {
     screens[screen].modules.forEach((m) => {
       (half == HALF.MASTER ? this.master.intervalIDs : this.slave.intervalIDs).push(setInterval(m, screens[screen].frequency, this, half, this.config));
     });
+    this.config.updateField((half == HALF.MASTER ? 'masterScreen' : 'accessToken'), screen) 
   };
 
   /**

@@ -63,6 +63,8 @@ export enum ImageMode {
 export interface ConfigStore {
   accessToken: string | null;
   refreshToken: string | null;
+  masterScreen: number;
+  slaveScreen: number;
 }
 
 export type ModuleSync = {

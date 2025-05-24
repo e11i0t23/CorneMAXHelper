@@ -90,7 +90,8 @@ let screen_slave: number = 0;
 
 app.on("ready", async () => {
   // load config
-  config = new Config(userDataPath);
+  config = await Config.init(userDataPath);
+
   // Set Notification
   new Notification({'title':'Corne Max Helper Started'}).show()
   log.info("App Ready");
