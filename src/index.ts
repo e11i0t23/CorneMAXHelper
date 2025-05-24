@@ -50,10 +50,13 @@ const contextMenu = (connected: boolean, f?: boolean): Menu =>
           ),
           ...(
             connected ? [
-            { label: "Upload Master", click: () => uploadCustomImage(device, HALF.MASTER, ) }, 
-            { label: "Upload Slave", click: () => uploadCustomImage(device, HALF.SLAVE) },
-            { label: "Upload Gif Master", click: () => uploadCustomGifImage(device, HALF.MASTER) }, 
-            { label: "Upload Gif Slave", click: () => uploadCustomGifImage(device, HALF.SLAVE) },
+              {
+                label: "Upload",
+                submenu: [                  
+                  { label: "Master", click: () => uploadCustomImage(device, HALF.MASTER, ) }, 
+                  { label: "Slave", click: () => uploadCustomImage(device, HALF.SLAVE) },
+              ],
+            },
             {
               label: "Master",
               

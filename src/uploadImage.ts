@@ -5,7 +5,7 @@ import type { Device } from "./device";
 import { convertImageBlob } from "./converter";
 import { splitUint16 } from "./helpers";
 import {dialog} from "electron"
-import { GifCodec, GifFrame, GifUtil } from "gifwrap";
+import { GifCodec, GifFrame, GifUtil, Gif } from "gifwrap";
 import { readFileSync } from "fs";
 
 import log from "electron-log/node"
@@ -22,11 +22,20 @@ const CHUNK_SIZE = 25;
 * @returns {Promise<boolean>} - Whether the image was uploaded successfully
 */
 export const uploadCustomImage = async (dev: Device, half: number): Promise<boolean> => {
- const OF = await dialog.showOpenDialog({ properties: ["openFile"], filters: [{ name: "Images", extensions: ["png", "jpg", "jpeg"] }] });
- if (OF.canceled) return false;
- if (OF.filePaths.length == 0) return false;
- const image = await loadImage(OF.filePaths[0]);
- return await uploadImage(dev, CODES.IMG_FULLSIZE, half, image, 80, 160);
+  const OF = await dialog.showOpenDialog({ properties: ["openFile"], filters: [{ name: "Images", extensions: ["png", "jpg", "jpeg", "gif"] }] });
+  if (OF.canceled) return false;
+  if (OF.filePaths.length == 0) return false;
+  const path = OF.filePaths[0]
+  if (path.slice(-3) == "gif") {
+    const data = await readFileSync(path)
+    const gif = await (new GifCodec()).decodeGif(data);
+    return await uploadCustomGifImage(dev, half, gif)
+  } else {    
+    const image = await loadImage(path);
+    return await uploadImage(dev, CODES.IMG_FULLSIZE, half, image, 80, 160);
+  }
+
+
 };
 
 /**
@@ -75,15 +84,9 @@ export const uploadImage = async (dev: Device, code: CODES, half: HALF, image: I
   return true;
 };
 
-export const uploadCustomGifImage = async (dev: Device, half: number): Promise<boolean> => {
+export const uploadCustomGifImage = async (dev: Device, half: number, gif: Gif): Promise<boolean> => {
   const W = 80
   const H = 100
-  const OF = await dialog.showOpenDialog({ properties: ["openFile"], filters: [{ name: "Gif", extensions: ["gif"] }] });
-  if (OF.canceled) return false;
-  if (OF.filePaths.length == 0) return false;
-
-  const data = await readFileSync(OF.filePaths[0])
-  const gif = await (new GifCodec()).decodeGif(data);
 
   const gw = gif.width
   const gh = gif.height
