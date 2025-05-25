@@ -61,6 +61,7 @@ export enum ImageMode {
 }
 
 export interface ConfigStore {
+  version: number | undefined;
   accessToken: string | null;
   refreshToken: string | null;
   masterScreen: number;

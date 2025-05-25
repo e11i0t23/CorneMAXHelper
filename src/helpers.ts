@@ -2,6 +2,7 @@ import { readFileSync, writeFileSync } from "fs";
 import path from "path";
 import { safeStorage } from "electron";
 import type { ImageMode, ConfigStore } from "./types";
+import defaultConfig from './defaultConfig.json';
 
 import log from "electron-log/node"
 
@@ -123,17 +124,32 @@ export class Config {
     try {
       const filestring = readFileSync(path.join(this.userData, "config.json"));
       if (!filestring) {
-        this.config = { accessToken: null, refreshToken: null, masterScreen: 0, slaveScreen: 1 };
+        this.config = defaultConfig
       } else if (!safeStorage.isEncryptionAvailable()) {
         this.config = JSON.parse(filestring.toString());
       } else {
         const unencrypted = safeStorage.decryptString(filestring);
         this.config = JSON.parse(unencrypted);
       }
-      console.log(this.config);
+      console.log(this.config )
+      if (this.config.version != defaultConfig.version) {
+        // Start with the new default config
+        let tempConfig: ConfigStore = { ...defaultConfig };
+        
+        // Copy over old values where applicable, excluding removed keys and 'version'
+        for (const key of Object.keys(this.config) as (keyof ConfigStore)[])  {
+          if (key in defaultConfig && key !== "version") {
+            //@ts-ignore
+            tempConfig[key] = this.config[key] ;
+          }
+        }
+        // Update config with migrated settings and new version
+        await this.updateConfig(tempConfig);
+      }
+      console.log(this.config )
     } catch (e) {
       log.error(`error loading config file ${e}`);
-      this.config = { accessToken: null, refreshToken: null, masterScreen: 0, slaveScreen: 1 };
+      this.config = defaultConfig
     }
   }
 
