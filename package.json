@@ -5,6 +5,7 @@
   "main": ".webpack/main",
   "author": "Mechboards",
   "icon": "./images/icon.png",
+  "repository": "github:e11i0t23/CorneMAXHelper",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "electron-forge start",
@@ -50,6 +51,7 @@
     "logger": "^0.0.1",
     "node-hid": "^3.1.0",
     "systeminformation": "^5.22.11",
+    "update-electron-app": "^3.1.1",
     "usb": "^2.13.0"
   }
 }

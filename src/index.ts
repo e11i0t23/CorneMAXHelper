@@ -15,6 +15,9 @@ import { screens } from "./screens";
 
 import log from "electron-log/main";
 
+import { updateElectronApp } from 'update-electron-app'
+updateElectronApp()
+
 log.initialize();
 log.errorHandler.startCatching();
 
