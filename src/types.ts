@@ -66,6 +66,8 @@ export interface ConfigStore {
   refreshToken: string | null;
   masterScreen: number;
   slaveScreen: number;
+  masterGif: number[];
+  slaveGif: number[];
 }
 
 export type ModuleSync = {

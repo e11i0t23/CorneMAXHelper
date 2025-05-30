@@ -6,7 +6,8 @@ import { convertImageBlob } from "./converter";
 import { splitUint16 } from "./helpers";
 import {dialog} from "electron"
 import { GifCodec, GifFrame, GifUtil, Gif } from "gifwrap";
-import { readFileSync } from "fs";
+import { readFileSync, writeFileSync} from "fs";
+
 
 import log from "electron-log/node"
 
@@ -160,6 +161,7 @@ export const uploadCustomGifImage = async (dev: Device, half: number, gif: Gif):
     loops: gif.loops
   });
   const image = new Uint8Array(resizedGifBuffer.buffer)
+  dev.config.updateField((half == HALF.MASTER ? "masterGif" : "slaveGif"), Array.from(image))
   // Push gif to display via the image converter
   dev.updateScreen(4, half)
   return await uploadImage(dev, CODES.IMG_GIF, half, image, W, H, true);

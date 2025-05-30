@@ -6,6 +6,9 @@ import { EventEmitter } from "events";
 import log from "electron-log/node";
 import { Config } from "./helpers";
 import { screens } from "./screens";
+import { uploadImage } from "./uploadImage";
+
+import { setTimeout } from "timers/promises";
 
 log.errorHandler.startCatching();
 
@@ -74,6 +77,8 @@ export class Device extends EventEmitter {
    * @returns {Promise<boolean>} - Whether the device was connected successfully
    */
   connectToDevice = async () => {
+    // The slave side takes a second to power up so we account for this
+    await setTimeout(3000)
     // Get all HID devices
     var devices = await HID.devicesAsync();
     // Filter for the keyboard device
@@ -90,6 +95,9 @@ export class Device extends EventEmitter {
       // load the modules to be sysnced
       this.updateScreen(this.master.screen, HALF.MASTER);
       this.updateScreen(this.slave.screen, HALF.SLAVE);
+      // upload the master and slave gifs
+      uploadImage(this, CODES.IMG_GIF, HALF.MASTER, new Uint8Array(this.config.config.masterGif), 80, 100, true)
+      uploadImage(this, CODES.IMG_GIF, HALF.SLAVE, new Uint8Array(this.config.config.slaveGif), 80, 100, true)
 
       return true;
     } catch (error) {

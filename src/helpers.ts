@@ -2,7 +2,7 @@ import { readFileSync, writeFileSync } from "fs";
 import path from "path";
 import { safeStorage } from "electron";
 import type { ImageMode, ConfigStore } from "./types";
-import defaultConfig from './defaultConfig.json';
+import {defaultConfig} from './defaultConfig';
 
 import log from "electron-log/node"
 
