@@ -107,12 +107,11 @@ app.on("ready", async () => {
   device = new Device(config);
 
   // initialize tray
-  const icon = nativeImage.createFromPath(path.join(__dirname, "./images/logoTemplate.png"));
+  const icon = nativeImage.createFromPath(path.join(__dirname, (process.platform == "win32" ? "./images/logoTemplate.png": "./images/logoTemplateDark.png")));
   tray = new Tray(icon);
   tray.setToolTip("Corne Max Helper");
   tray.setContextMenu(contextMenu(false));
   log.info("Tray created");
-
 
   // update connection status in tray based on device connection events
   device.on("connected", () => {
