@@ -9,6 +9,7 @@ import { screens } from "./screens";
 import { uploadImage } from "./uploadImage";
 
 import { setTimeout } from "timers/promises";
+import { LIBUSB_TRANSFER_TYPE_ISOCHRONOUS } from "usb/dist/usb";
 
 log.errorHandler.startCatching();
 
@@ -30,12 +31,17 @@ export class Device extends EventEmitter {
   master: Half = {
     screen: 0,
     intervalIDs: [],
+    gifLoad: false,
   };
 
   slave: Half = {
     screen: 0,
     intervalIDs: [],
+    gifLoad: false
   };
+
+  private writeBuffer: any[]= []
+  private writeInterval: NodeJS.Timeout
 
   /**
    * @constructor
@@ -59,14 +65,17 @@ export class Device extends EventEmitter {
 
     // Initialise USB event listeners to detect when the keyboard is disconnected
     usb.on("detach", (device) => {
-      if (device.deviceDescriptor.idVendor == Number(0x4653) && device.deviceDescriptor.idProduct == Number(0x0001)) {
-        this.device = null;
-        log.info("Device Discconected");
-        this.emit("disconnected");
-        [...this.slave.intervalIDs, ...this.master.intervalIDs].forEach((id) => {
-          clearInterval(id);
-        });
-      }
+      if (!(device.deviceDescriptor.idVendor == Number(0x4653) && device.deviceDescriptor.idProduct == Number(0x0001))) return
+      this.device = null;
+      log.info("Device Discconected");
+      this.emit("disconnected");
+      [...this.slave.intervalIDs, ...this.master.intervalIDs].forEach((id) => {
+        clearInterval(id);
+      });
+      this.writeBuffer = []
+      clearInterval(this.writeInterval)
+      this.master.gifLoad = false
+      this.slave.gifLoad = false
     });
   }
 
@@ -76,7 +85,7 @@ export class Device extends EventEmitter {
    * @async
    * @returns {Promise<boolean>} - Whether the device was connected successfully
    */
-  connectToDevice = async () => {
+  private connectToDevice = async () => {
     // The slave side takes a second to power up so we account for this
     await setTimeout(3000)
     // Get all HID devices
@@ -92,12 +101,12 @@ export class Device extends EventEmitter {
       if (!this.device) return false;
       log.info("Connected to device");
       this.emit("connected");
+
+      this.writeInterval = setInterval((this.writeIntervalFunction), 1)
+
       // load the modules to be sysnced
       this.updateScreen(this.master.screen, HALF.MASTER);
       this.updateScreen(this.slave.screen, HALF.SLAVE);
-      // upload the master and slave gifs
-      uploadImage(this, CODES.IMG_GIF, HALF.MASTER, new Uint8Array(this.config.config.masterGif), 80, 100, true)
-      uploadImage(this, CODES.IMG_GIF, HALF.SLAVE, new Uint8Array(this.config.config.slaveGif), 80, 100, true)
 
       return true;
     } catch (error) {
@@ -112,6 +121,13 @@ export class Device extends EventEmitter {
       clearInterval(id);
     });
     (half == HALF.MASTER ? this.master : this.slave).screen = screen;
+
+    // If its gif we first upload the users saved gif
+    if (screens[screen].name == "Gif" && ((half == HALF.MASTER && this.master.gifLoad == false) || (half == HALF.SLAVE && this.slave.gifLoad == false))){
+        uploadImage(this, CODES.IMG_GIF, half, new Uint8Array((half == HALF.MASTER ? this.config.config.masterGif : this.config.config.slaveGif)), 80, 100, true);
+        (half == HALF.MASTER ? this.master : this.slave).gifLoad = true;
+    }
+
     this.write(CODES.SCREEN, half, [screens[screen].code]);
     screens[screen].modules.forEach((m) => {
       (half == HALF.MASTER ? this.master.intervalIDs : this.slave.intervalIDs).push(setInterval(m, screens[screen].frequency, this, half, this.config));
@@ -129,10 +145,18 @@ export class Device extends EventEmitter {
    * @returns {Promise<boolean>} - Whether the write was successful
    */
   write = async (command: CODES, half: HALF, data: number[] | Buffer | Uint8Array): Promise<boolean> => {
-    if (!this.device) return false;
+    if (this.device == null) return false;
     var buffer: any[] = [];
     if (process.platform == "win32") buffer.push(0xff);
     buffer.push(0x07, 0x00, command, half, ...data);
-    return (await this.device.write(buffer)) > data.length;
+    return (await this.writeBuffer.push(buffer)) > data.length;
+    // return (await this.device.write(buffer)) > data.length;
   };
+
+  // Interval function that actually process writing to the device from the buffer under a FIFO method
+  private writeIntervalFunction = () => {
+    if (this.device == null) return
+    if (this.writeBuffer.length == 0) return
+    this.device.write(this.writeBuffer.shift())
+  }
 }

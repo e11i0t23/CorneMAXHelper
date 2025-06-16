@@ -87,4 +87,5 @@ export type ScreenSync = {
 export type Half = {
   screen: number;
   intervalIDs: any[];
+  gifLoad: boolean;
 };

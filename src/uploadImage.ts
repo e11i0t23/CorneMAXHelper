@@ -73,15 +73,17 @@ export const uploadImage = async (dev: Device, code: CODES, half: HALF, image: I
   const convertImageFix = gif ? convertedImage : convertedImage.slice(4);
   // split the image into 26 byte chunks and send them to the keyboard staggered
   const imageBytesArray = new Uint8Array(convertImageFix);
+  // Start of Upload Flag
   dev.write(CODES.STATUS, half, new Uint8Array([code,  0x00]))
   for (let i = 0; i < imageBytesArray.length; i += CHUNK_SIZE) {
     var x = i / CHUNK_SIZE;
     var bytes = imageBytesArray.slice(i, i + CHUNK_SIZE)
     var len = bytes.length
     buffer[x] = new Uint8Array([...splitUint16(x), len, ...bytes]);
-    setTimeout(dev.write, x, code, half, buffer[x]);
+    dev.write(code, half, buffer[x]);
   }
-  setTimeout(dev.write, (imageBytesArray.length/CHUNK_SIZE)+200, CODES.STATUS, half, new Uint8Array([code, 0x01, ...splitUint16(convertImageFix.byteLength)]))
+  // End of Upload Flag
+  dev.write(CODES.STATUS, half, new Uint8Array([code, 0x01, ...splitUint16(convertImageFix.byteLength)]))
   return true;
 };
 
