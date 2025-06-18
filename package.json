@@ -1,6 +1,6 @@
 {
   "name": "cornemaxhelper",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Corne MAX Helper",
   "main": ".webpack/main",
   "author": "Mechboards",

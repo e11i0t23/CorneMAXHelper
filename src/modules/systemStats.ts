@@ -8,7 +8,8 @@ import dayjs from "dayjs";
 let lastMem: number = 50;
 let lastCPU: number = 50;
 let lastGPU: number = 50;
-let lastTime: string = "00:00";
+let lastTimeMaster: string = "00:00";
+let lastTimeSlave: string = "00:00";
 
 const diffVal = 3;
 
@@ -56,10 +57,9 @@ export const syncLargeSystemTime = async (d: Device, half: HALF, config: Config)
 
 export const syncSystemTime = async (d: Device, half: HALF, config: Config, l?: Boolean) => {
   let date = new Date(); // time now
-  let time = dayjs(date).format("hh:mm");
-  if (l == true) time = time.replace(":", "\n");
-  if (time !== lastTime) {
+  let time = dayjs(date).format(l==true ? "hh\nmm\na": "hh:mma");
+  if (time !== (half == HALF.MASTER ? lastTimeMaster : lastTimeSlave )) {
     d.write(CODES.TIME, half, string2bytes(time));
-    lastTime = time;
+    (half == HALF.MASTER ? lastTimeMaster = time : lastTimeSlave = time);
   }
 };
