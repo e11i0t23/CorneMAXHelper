@@ -149,6 +149,9 @@ export class Device extends EventEmitter {
     var buffer: any[] = [];
     if (process.platform == "win32") buffer.push(0xff);
     buffer.push(0x07, 0x00, command, half, ...data);
+    while (buffer.length < ((process.platform == "win32" ? 33:32))) {
+      buffer.push(0x00);
+    }
     return (await this.writeBuffer.push(buffer)) > data.length;
     // return (await this.device.write(buffer)) > data.length;
   };
