@@ -15,6 +15,8 @@ import { screens } from "./screens";
 
 import log from "electron-log/main";
 
+import { setTimeout } from "timers/promises";
+
 import { updateElectronApp } from 'update-electron-app'
 updateElectronApp()
 
@@ -85,7 +87,14 @@ const contextMenu = (connected: boolean, f?: boolean): Menu =>
             },
              ] : []
           ),
-          { label: "Quit", click: app.quit },
+          { label: "Quit", click: async () => {
+               if (device.device != null){
+                 device.clear();
+                }
+              await setTimeout(50);
+              app.quit();
+            } 
+          },
         ]
 
   );
@@ -137,3 +146,4 @@ const disconnectSpotify = () => {
   spotifyDeAuth(config);
   tray.setContextMenu(contextMenu(device.device != null))
 };
+ 

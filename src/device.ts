@@ -9,7 +9,6 @@ import { screens } from "./screens";
 import { uploadImage } from "./uploadImage";
 
 import { setTimeout } from "timers/promises";
-import { LIBUSB_TRANSFER_TYPE_ISOCHRONOUS } from "usb/dist/usb";
 
 log.errorHandler.startCatching();
 
@@ -134,6 +133,14 @@ export class Device extends EventEmitter {
     });
     this.config.updateField((half == HALF.MASTER ? 'masterScreen' : 'accessToken'), screen) 
   };
+
+  // clears all interval timers and resets screens to default
+  clear = async () => {
+    this.master.intervalIDs.forEach((id) => {clearInterval(id);});
+    this.slave.intervalIDs.forEach((id) => {clearInterval(id);});
+    this.write(CODES.SCREEN, HALF.MASTER, [0]);
+    this.write(CODES.SCREEN, HALF.SLAVE, [0]);
+  }
 
   /**
    * Write to HID Device, adding in the default config bytes
