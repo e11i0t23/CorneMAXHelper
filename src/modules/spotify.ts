@@ -56,6 +56,13 @@ export const spotifyAuth = async (c: Config) => {
   const win = new BrowserWindow({ width: 800, height: 600, icon: "./images/icon" });
   win.loadURL(authUrl.toString());
   win.show();
+
+  // Prevent app from quitting when this window is closed
+  win.on("close", (event) => {
+    event.preventDefault();
+    win.hide();
+  });
+
   // Handle the callback by wathcing for the redirect uri
   win.webContents.on("will-navigate", (event, url) => {
     if (!url.startsWith(redirectUri)) return;
