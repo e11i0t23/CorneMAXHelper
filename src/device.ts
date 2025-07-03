@@ -131,7 +131,7 @@ export class Device extends EventEmitter {
     screens[screen].modules.forEach((m) => {
       (half == HALF.MASTER ? this.master.intervalIDs : this.slave.intervalIDs).push(setInterval(m, screens[screen].frequency, this, half, this.config));
     });
-    this.config.updateField((half == HALF.MASTER ? 'masterScreen' : 'accessToken'), screen) 
+    this.config.updateField((half == HALF.MASTER ? 'masterScreen' : 'slaveScreen'), screen);
   };
 
   // clears all interval timers and resets screens to default
