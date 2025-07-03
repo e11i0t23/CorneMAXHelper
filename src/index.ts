@@ -92,7 +92,8 @@ const contextMenu = (connected: boolean, f?: boolean): Menu =>
                  device.clear();
                 }
               await setTimeout(50);
-              app.quit();
+              log.info("Quitting app");
+              app.exit();
             } 
           },
         ]
